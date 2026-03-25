@@ -1,0 +1,36 @@
+/* Header.css */
+
+.dashboard-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 12px);
+    color: var(--krishi-green, #00c853);
+    font-family: var(--font-display, 'Poppins', sans-serif);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    height: 40px;
+}
+
+.dashboard-btn:hover {
+    background: var(--bg-light, #f8fafb);
+    border-color: var(--krishi-green, #00c853);
+    color: var(--krishi-green, #00c853);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm, 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06));
+}
+
+.dashboard-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.dashboard-btn i {
+    font-size: 16px;
+}
