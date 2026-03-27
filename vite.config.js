@@ -8,42 +8,51 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_last_irrigation_calendar': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_daily_data': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_irrigation_calendar': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_land_cover_analysis': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_gee_tile': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_available_dates': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/generate_report': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
       '/get_vra_map': {
-        target: 'http://localhost:5000',
+        target: 'https://agritour-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
     },
   },
   publicDir: 'public',
-})
+}) 
