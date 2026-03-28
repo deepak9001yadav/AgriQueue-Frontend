@@ -604,7 +604,7 @@ function Dashboard() {
             <header className="dashboard-header">
                 <div className="nav-left">
                     <Link to="/dashboard" className="brand">
-                        <img src="/static/Logo.jpg" alt="KrishiZest" style={{ height: 60 }} />
+                        <img src="/static/Logo.jpg" alt="KrishiZest" style={{ height: 48 }} />
                     </Link>
                     <nav className="nav-links">
                         <Link to="/dashboard" className="nav-link active">Dashboard</Link>
