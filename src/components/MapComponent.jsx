@@ -162,7 +162,19 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             console.warn('Tile loading error:', e);
         });
 
+        // Add ResizeObserver to handle container size changes
+        const resizeObserver = new ResizeObserver(() => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.invalidateSize();
+            }
+        });
+
+        if (mapRef.current) {
+            resizeObserver.observe(mapRef.current);
+        }
+
         return () => {
+            resizeObserver.disconnect();
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;

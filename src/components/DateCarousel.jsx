@@ -103,11 +103,11 @@ function DateCarousel({ onDateSelect }) {
 
     // Helper function to get sensor display name
     const getSensorDisplay = (sensor) => {
-        if (sensor === 'Landsat') return 'L8/9';
-        if (sensor === 'Sentinel-1') return 'S1/SMAP';
+        if (sensor === 'Landsat') return;
+        if (sensor === 'Sentinel-1') return;
         if (sensor === 'Sentinel-2') {
             // Show S2/MODIS for LST layer
-            return selectedLayer === 'lst' ? 'S2/MODIS' : 'S2';
+            return selectedLayer === 'lst' ? '' : '';
         }
         return sensor; // fallback
     };

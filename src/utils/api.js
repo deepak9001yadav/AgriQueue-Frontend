@@ -1,5 +1,6 @@
 // API utility for backend communication
 import { auth } from '../config/firebase';
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 /**
  * Get authentication headers with Firebase ID token
@@ -26,7 +27,7 @@ export async function getAuthHeaders() {
 // Fetch daily data from backend - matches app2.html logic exactly
 export async function fetchDailyData(aoi, startDate, endDate, fieldId = null) {
     const headers = await getAuthHeaders();
-    const response = await fetch('/get_daily_data', {
+    const response = await fetch(`${BASE_URL}/get_daily_data`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -58,7 +59,7 @@ export async function fetchDailyData(aoi, startDate, endDate, fieldId = null) {
 export async function fetchIrrigationCalendar(aoi, startDate, endDate, fieldId = null) {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch('/get_irrigation_calendar', {
+        const response = await fetch(`${BASE_URL}/get_irrigation_calendar`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -86,7 +87,7 @@ export async function fetchIrrigationCalendar(aoi, startDate, endDate, fieldId =
 export async function fetchAvailableDates(aoi, startDate, endDate) {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch('/get_available_dates', {
+        const response = await fetch(`${BASE_URL}/get_available_dates`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -113,7 +114,7 @@ export async function fetchAvailableDates(aoi, startDate, endDate) {
 export async function fetchLandCoverAnalysis(aoi, startDate, endDate, timeScale = 'monthly') {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch('/get_land_cover_analysis', {
+        const response = await fetch(`${BASE_URL}/get_land_cover_analysis`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -153,7 +154,7 @@ export async function fetchGeeTile(aoi, layer, startDate, endDate, specificDate 
             requestBody.end_date = endDate;
         }
 
-        const response = await fetch('/get_gee_tile', {
+        const response = await fetch(`${BASE_URL}/get_gee_tile`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -186,7 +187,7 @@ export async function fetchVraMap(aoi, parameter, date, startDate, endDate, sign
             end_date: endDate
         };
 
-        const response = await fetch('/get_vra_map', {
+        const response = await fetch(`${BASE_URL}/get_vra_map`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -211,7 +212,7 @@ export async function fetchVraMap(aoi, parameter, date, startDate, endDate, sign
 // Generate PDF report
 export async function generateReport(reportData) {
     try {
-        const response = await fetch('/generate_report', {
+        const response = await fetch(`${BASE_URL}/generate_report`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -249,7 +250,7 @@ export async function searchLocation(query) {
                 let displayName = `Coordinates: ${lat}, ${lon}`;
                 try {
                     const reverseResponse = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+                        `${BASE_URL}/https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
                     );
                     if (reverseResponse.ok) {
                         const data = await reverseResponse.json();
@@ -270,7 +271,7 @@ export async function searchLocation(query) {
         }
 
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`
+            `${BASE_URL}/https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`
         );
 
         if (!response.ok) {
@@ -289,7 +290,7 @@ export async function searchLocation(query) {
 export async function reverseGeocode(lat, lng) {
     try {
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+            `${BASE_URL}/https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
         );
 
         if (!response.ok) {
@@ -314,7 +315,7 @@ export async function reverseGeocode(lat, lng) {
 export async function getFields() {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch('/api/get_fields', { headers });
+        const response = await fetch(`${BASE_URL}/api/get_fields`, { headers });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -335,7 +336,7 @@ export async function getFields() {
 export async function saveField(fieldData) {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch('/api/save_field', {
+        const response = await fetch(`${BASE_URL}/api/save_field`, {
             method: 'POST',
             headers,
             body: JSON.stringify(fieldData)
@@ -360,7 +361,7 @@ export async function saveField(fieldData) {
 export async function updateField(fieldId, fieldData) {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch(`/api/update_field/${fieldId}`, {
+        const response = await fetch(`${BASE_URL}/api/update_field/${fieldId}`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(fieldData)
@@ -385,7 +386,7 @@ export async function updateField(fieldId, fieldData) {
 export async function deleteField(fieldId) {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch(`/api/delete_field/${fieldId}`, {
+        const response = await fetch(`${BASE_URL}/api/delete_field/${fieldId}`, {
             method: 'DELETE',
             headers
         });
@@ -408,7 +409,7 @@ export async function deleteField(fieldId) {
  */
 export async function getLastIrrigationCalendar() {
     try {
-        const response = await fetch('/api/get_last_irrigation_calendar');
+        const response = await fetch(`${BASE_URL}/api/get_last_irrigation_calendar`);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -430,7 +431,7 @@ export async function getLastIrrigationCalendar() {
 export async function getUserAreaSummary() {
     try {
         const headers = await getAuthHeaders();
-        const response = await fetch('/api/get_user_area_summary', { headers });
+        const response = await fetch(`${BASE_URL}/api/get_user_area_summary`, { headers });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));

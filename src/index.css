@@ -359,7 +359,7 @@ body {
   margin-top: 80px;
   /* Matches header height */
   height: calc(100vh - 80px);
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
   background: white;
 }
