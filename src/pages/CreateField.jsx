@@ -82,10 +82,11 @@ function CreateField() {
     useEffect(() => {
         if (!mapRef.current || mapInstanceRef.current) return;
 
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri',
-            maxZoom: 25,
-            maxNativeZoom: 18
+        const hybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '&copy; Google Maps',
+            maxZoom: 23,
+            maxNativeZoom: 19,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         });
 
         const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -100,7 +101,7 @@ function CreateField() {
             zoom: 5,
             minZoom: 1,
             maxZoom: 23,
-            layers: [satelliteLayer]
+            layers: [hybridLayer]
         });
 
         mapInstanceRef.current = map;
@@ -114,7 +115,7 @@ function CreateField() {
 
 
         // Layer control
-        L.control.layers({ "Satellite": satelliteLayer, "Street Map": streetLayer },
+        L.control.layers({ "Hybrid Map": hybridLayer, "Street Map": streetLayer },
             null, { position: 'topright' }).addTo(map);
 
         // Initialize drawn items layer
@@ -584,7 +585,7 @@ function CreateField() {
             <header className="create-field-header">
                 <div className="header-left">
                     <Link to="/dashboard" className="brand">
-                        <img src="/static/Logo.jpg" alt="KrishiZest" style={{ height: 60 }} />
+                        <img src="/static/Logo.jpg" alt="KrishiZest" style={{ height: 48 }} />
                     </Link>
                 </div>
 
