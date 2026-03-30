@@ -52,6 +52,7 @@ const paramColors = {
 function AnalyticsSidebar() {
     const {
         isRightPanelOpen,
+        toggleRightPanel,
         ndviStats,
         irrigationCalendar,
         isDarkMode,
@@ -197,6 +198,19 @@ function AnalyticsSidebar() {
             setShowDashboard(false);
         }
     }, [selectedLayer]);
+
+    // ─── Toggle Button Helper ─────────────────────────────────────────────────
+    const asideCls = `analytics-sidebar ${!isRightPanelOpen ? 'collapsed' : ''}`;
+    const toggleBtn = (
+        <button
+            className="analytics-panel-toggle-btn"
+            onClick={toggleRightPanel}
+            title={isRightPanelOpen ? 'Collapse Analytics Panel' : 'Expand Analytics Panel'}
+        >
+            <i className={`fa-solid fa-chevron-${isRightPanelOpen ? 'right' : 'left'}`}></i>
+        </button>
+    );
+    // ─────────────────────────────────────────────────────────────────────────
 
     useEffect(() => {
         // Only hide dashboard when switching chart params if we're not on NDVI layer
@@ -585,6 +599,8 @@ function AnalyticsSidebar() {
     };
 
     // MAIN RENDER LOGIC
+    // Only render the sidebar if a layer is selected. 
+    // This keeps it "Gone" on page load until user interracts with layers.
     if (!selectedLayer) {
         return null;
     }
@@ -592,7 +608,9 @@ function AnalyticsSidebar() {
     // Case 0: Weather Tab - Show Weather Dashboard
     if (activeChartParam === 'weather') {
         return (
-            <aside className={`analytics-sidebar ${!isRightPanelOpen ? 'collapsed' : ''}`}>
+            <aside className={asideCls}>
+                {toggleBtn}
+                <div className="analytics-sidebar-inner">
                 <div className="weather-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'hidden' }}>
                     {/* Header */}
                     <div style={{
@@ -624,6 +642,7 @@ function AnalyticsSidebar() {
                         <ChartPanel mode="sidebar" />
                     </div>
                 </div>
+                </div>
             </aside>
         );
     }
@@ -634,7 +653,9 @@ function AnalyticsSidebar() {
         // Context A: Layer Selection Context -> Show Full Dashboard
         if (showDashboard && selectedLayer === 'ndvi') {
             return (
-                <aside className={`analytics-sidebar ${!isRightPanelOpen ? 'collapsed' : ''}`}>
+                <aside className={asideCls}>
+                    {toggleBtn}
+                    <div className="analytics-sidebar-inner">
                     <div className="ndvi-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'hidden' }}>
                         {/* Header */}
                         <div style={{
@@ -819,6 +840,7 @@ function AnalyticsSidebar() {
                             <ChartPanel mode="sidebar" />
                         </div>
                     </div>
+                    </div>
                 </aside>
             );
         }
@@ -827,11 +849,14 @@ function AnalyticsSidebar() {
         const reportCharts = getReportCharts();
         if (reportCharts) {
             return (
-                <aside className={`analytics-sidebar ${!isRightPanelOpen ? 'collapsed' : ''}`}>
+                <aside className={asideCls}>
+                    {toggleBtn}
+                    <div className="analytics-sidebar-inner">
                     {reportCharts}
                     {/* Chart Panel - Sidebar Mode */}
                     <div style={{ flex: 1, padding: '4px 10px', display: 'flex', flexDirection: 'column' }}>
                         <ChartPanel mode="sidebar" />
+                    </div>
                     </div>
                 </aside>
             );
@@ -842,7 +867,39 @@ function AnalyticsSidebar() {
     // Only show Crop Health Statistics if NDVI layer is selected (Pre-computation/Map View)
     if (selectedLayer !== 'ndvi') {
         return (
-            <aside className={`analytics-sidebar ${!isRightPanelOpen ? 'collapsed' : ''}`}>
+            <aside className={asideCls}>
+                {toggleBtn}
+                <div className="analytics-sidebar-inner">
+                    <div className="default-analytics-placeholder">
+                        <h3>{t('data_analytics')}</h3>
+                        <div className="analytics-chart-wrap">
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '100%',
+                                color: 'var(--muted)',
+                                textAlign: 'center',
+                                padding: '20px',
+                            }}>
+                                <p>Select &quot;Crop Health&quot; (NDVI) layer to view statistics</p>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Chart Panel - Sidebar Mode */}
+                    <div style={{ flex: 1, padding: '4px 10px', display: 'flex', flexDirection: 'column' }}>
+                        <ChartPanel mode="sidebar" />
+                    </div>
+                </div>
+            </aside>
+        );
+    }
+
+    // If no data, show placeholder (NDVI selected but no data fetched)
+    return (
+        <aside className={asideCls}>
+            {toggleBtn}
+            <div className="analytics-sidebar-inner">
                 <div className="default-analytics-placeholder">
                     <h3>{t('data_analytics')}</h3>
                     <div className="analytics-chart-wrap">
@@ -855,7 +912,7 @@ function AnalyticsSidebar() {
                             textAlign: 'center',
                             padding: '20px',
                         }}>
-                            <p>Select "Crop Health" (NDVI) layer to view statistics</p>
+                            <p>Fetch data to view analytics</p>
                         </div>
                     </div>
                 </div>
@@ -863,32 +920,6 @@ function AnalyticsSidebar() {
                 <div style={{ flex: 1, padding: '4px 10px', display: 'flex', flexDirection: 'column' }}>
                     <ChartPanel mode="sidebar" />
                 </div>
-            </aside >
-        );
-    }
-
-    // If no data, show placeholder (NDVI selected but no data fetched)
-    return (
-        <aside className={`analytics-sidebar ${!isRightPanelOpen ? 'collapsed' : ''}`}>
-            <div className="default-analytics-placeholder">
-                <h3>{t('data_analytics')}</h3>
-                <div className="analytics-chart-wrap">
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '100%',
-                        color: 'var(--muted)',
-                        textAlign: 'center',
-                        padding: '20px',
-                    }}>
-                        <p>Fetch data to view analytics</p>
-                    </div>
-                </div>
-            </div>
-            {/* Chart Panel - Sidebar Mode */}
-            <div style={{ flex: 1, padding: '4px 10px', display: 'flex', flexDirection: 'column' }}>
-                <ChartPanel mode="sidebar" />
             </div>
         </aside>
     );

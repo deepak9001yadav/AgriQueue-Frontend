@@ -1042,28 +1042,80 @@ input[type="text"]:focus {
   opacity: 0.5;
 }
 
-/* Analytics Sidebar - Docked Right Panel */
+/* Analytics Sidebar - Docked Right Panel (Base Styles) */
 .analytics-sidebar {
   position: relative;
-  width: 300px;
   height: 100%;
-  flex-shrink: 0;
   background: #fff;
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), flex 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
   font-size: 12px;
   z-index: 900;
 }
 
+/* Base collapsed state - overridden at bottom for responsive safety */
 .analytics-sidebar.collapsed {
   width: 0 !important;
   min-width: 0 !important;
   padding: 0 !important;
-  border-left: none;
+  border: none !important;
+}
+
+/* Inner wrapper content ko container ke hisaab se stretch karta hai */
+.analytics-sidebar-inner {
   overflow: hidden;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: inherit;
+}
+
+/* Analytics Panel Toggle Button - white floating tab on left edge */
+.analytics-panel-toggle-btn {
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 60px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 12px;
+  z-index: 910;
+  box-shadow: -3px 2px 10px rgba(0, 0, 0, 0.10);
+  transition: all 0.2s ease;
+  padding: 0;
+  outline: none;
+}
+
+.analytics-panel-toggle-btn:hover {
+  background: #f0f9f0;
+  color: var(--krishi-green);
+  box-shadow: -4px 2px 14px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .analytics-panel-toggle-btn {
+  background: #1e2124;
+  border-color: #3a3d40;
+  color: #a0aec0;
+  box-shadow: -3px 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .analytics-panel-toggle-btn:hover {
+  background: #2c2f32;
+  color: #4ade80;
 }
 
 /* NDVI Dashboard */
@@ -3029,3 +3081,36 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
 .map-control-btn:active {
   transform: scale(0.98);
 }
+
+/* ─── Sidebar Final Overrides ────────────────────────────────────────────────── */
+/* Ye rules file ke bilkul aakhir mein hain taki saare media queries ko override kar sakein */
+
+/* Universal Collapsed State (Overrides all screen sizes) */
+.analytics-sidebar.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  flex: 0 0 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  overflow: visible !important;
+  /* Button tab ko bahar dikhane ke liye */
+}
+
+/* Prevent content squishing - wrap is moved offscreen as width goes to 0 */
+.analytics-sidebar.collapsed .analytics-sidebar-inner {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar smooth transition override */
+.analytics-sidebar {
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    flex 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    margin 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────── */

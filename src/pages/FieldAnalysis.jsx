@@ -160,66 +160,82 @@ function AppContent() {
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonLayers, setComparisonLayers] = useState([]);
 
-  // Load field from URL if present
+  // Load field from URL if present - Optimized with Cache First
   useEffect(() => {
     async function loadField() {
-      if (fieldId && !drawnAOI) {
-        let loadingSwal;
+      if (!fieldId || drawnAOI) return;
+
+      // STEP 1: Pehle localStorage se instant load karo (Zero Delay)
+      const localFieldsRaw = localStorage.getItem('fields');
+      let foundInCache = false;
+      
+      if (localFieldsRaw) {
         try {
-          loadingSwal = Swal.fire({
-            title: 'Loading Field...',
-            html: 'Please wait while we fetch the field data.',
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            }
-          });
-
-          // Try backend first, fallback to localStorage
-          let field = null;
-          try {
-            const fields = await getFields();
-            field = fields.find(f => f.id.toString() === fieldId);
-          } catch (e) {
-            console.log('Backend fetch failed, checking localStorage');
-          }
-
-          if (!field) {
-            const localFields = JSON.parse(localStorage.getItem('fields') || '[]');
-            field = localFields.find(f => f.id.toString() === fieldId);
-          }
-
+          const localFields = JSON.parse(localFieldsRaw);
+          const field = localFields.find(f => f.id.toString() === fieldId);
           if (field) {
-            console.log('Loaded field:', field);
-            let geometry = field.geometry;
-            const feature = {
+            console.log('Cache Hit: Loading field instantly from local storage');
+            setDrawnAOI({
               type: 'Feature',
-              geometry: geometry,
+              geometry: field.geometry,
               properties: { name: field.name, type: field.type }
-            };
-            setDrawnAOI(feature);
-            Swal.close();
-          } else {
-            Swal.fire({
-              icon: 'error',
-              title: 'Field Not Found',
-              text: 'Could not locate the requested field.',
-              confirmButtonColor: 'var(--krishi-green)'
             });
+            foundInCache = true;
           }
         } catch (e) {
-          console.error("Error loading field", e);
+          console.error('Cache parse error', e);
+        }
+      }
+
+      // STEP 2: Ab backend se fetch karo sync karne ke liye
+      // Agar cache mein nahi mila, tabhi blocking loader dikhao
+      let loadingSwal = null;
+      if (!foundInCache) {
+        loadingSwal = Swal.fire({
+          title: 'Loading Field...',
+          html: 'Please wait while we fetch the field data.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+      }
+
+      try {
+        const fields = await getFields();
+        const field = fields.find(f => f.id.toString() === fieldId);
+        
+        if (field) {
+          console.log('Backend Success: Updating field data');
+          setDrawnAOI({
+            type: 'Feature',
+            geometry: field.geometry,
+            properties: { name: field.name, type: field.type }
+          });
+          if (loadingSwal) Swal.close();
+        } else if (!foundInCache) {
+          // Agar na cache mein hai na backend mein, tab error dikhao
           Swal.fire({
             icon: 'error',
-            title: 'Error',
-            text: 'Failed to load field data.',
+            title: 'Field Not Found',
+            text: 'Could not locate the requested field.',
+            confirmButtonColor: 'var(--krishi-green)'
+          });
+        }
+      } catch (e) {
+        console.error("Backend Error:", e);
+        if (!foundInCache) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Network Error',
+            text: 'Failed to fetch field from backend.',
             confirmButtonColor: 'var(--krishi-green)'
           });
         }
       }
     }
     loadField();
-  }, [fieldId, drawnAOI, setDrawnAOI, notify]);
+  }, [fieldId, drawnAOI, setDrawnAOI]);
 
   // Handle location select from header search
   const handleLocationSelectSetup = useCallback((centerFunction) => {
@@ -433,6 +449,7 @@ function AppContent() {
       if (!specificDateOverride) {
         setSelectedImageryDate(null);
         setCurrentLayerType(layer);
+        ensureRightPanelOpen(); // Show analytics panel for weather too
       }
 
       // Show confirmation toast
@@ -469,6 +486,7 @@ function AppContent() {
     if (!specificDateOverride) {
       setSelectedImageryDate(null);
       setCurrentLayerType(layer);
+      ensureRightPanelOpen(); // Show analytics panel when switching layers
     }
 
     const currentRequestId = Symbol('layer_request');

@@ -86,25 +86,29 @@ function Dashboard() {
     // Load fields (Data Fetching)
     useEffect(() => {
         async function loadFields() {
-            let loadedFromBackend = false;
-            try {
-                // Try backend first using centralized API
-                const data = await getFields();
-                setFields(data);
-                loadedFromBackend = true;
-            } catch (error) {
-                console.log('Backend fields not available, checking localStorage');
-            }
-
-            if (!loadedFromBackend) {
+            // STEP A: Pehle purana data dikhao (Instant Load)
+            const localFields = localStorage.getItem('fields');
+            if (localFields) {
                 try {
-                    const localFields = JSON.parse(localStorage.getItem('fields') || '[]');
-                    setFields(localFields);
+                    setFields(JSON.parse(localFields));
+                    setLoading(prev => ({ ...prev, fields: false })); // Spinner turant band karo
                 } catch (e) {
-                    console.error('Error loading fields from localStorage', e);
+                    console.error('Cache parse error', e);
                 }
             }
-            setLoading(prev => ({ ...prev, fields: false }));
+
+            // STEP B: Chupke se naya data laao (Background Fetch)
+            try {
+                const data = await getFields();
+                if (data && data.length > 0) {
+                    setFields(data); // Screen update karo naye data se
+                    localStorage.setItem('fields', JSON.stringify(data)); // Naya data save karo next time ke liye
+                }
+            } catch (error) {
+                console.log('Backend fail hua, purana data hi dikhega');
+            } finally {
+                setLoading(prev => ({ ...prev, fields: false })); // Ensure spinner is off
+            }
         }
         loadFields();
     }, []);
@@ -123,7 +127,7 @@ function Dashboard() {
             }
         }
         fetchAreaSummary();
-    }, [fields]); // re-fetch whenever fields list changes (add/delete)
+    }, []); // re-fetch whenever fields list changes (add/delete)
 
     // Render Fields on Map (Visualization)
     useEffect(() => {
@@ -207,37 +211,30 @@ function Dashboard() {
     // Load irrigation calendar from backend or localStorage (unchanged)
     useEffect(() => {
         const fetchIrrigation = async () => {
-            let backendSuccess = false;
+            // STEP A: Pehle purana data dikhao
+            const stored = localStorage.getItem('lastIrrigationCalendar');
+            if (stored) {
+                try {
+                    setIrrigationData(JSON.parse(stored));
+                    setLoading(prev => ({ ...prev, irrigation: false })); // Spinner band
+                } catch (e) {
+                    console.error('Error parsing stored irrigation data:', e);
+                }
+            }
+
+            // STEP B: Background mein nayi API call
             try {
                 const data = await getLastIrrigationCalendar();
-                // Only use backend data if it has actual calendar events
                 if (data && data.calendar && data.calendar.length > 0) {
-                    setIrrigationData(data);
+                    setIrrigationData(data); // Update UI
                     localStorage.setItem('lastIrrigationCalendar', JSON.stringify(data));
-                    backendSuccess = true;
-                    console.log('✅ Dashboard: Loaded fresh irrigation data from backend');
-                } else {
-                    console.log('⚠️ Dashboard: Backend returned empty irrigation data, checking localStorage...');
+                    console.log('✅ Loaded fresh irrigation data');
                 }
             } catch (e) {
                 console.log('Fetching irrigation from backend failed:', e);
+            } finally {
+                setLoading(prev => ({ ...prev, irrigation: false }));
             }
-
-            // Fallback to localStorage if backend failed or returned empty data
-            if (!backendSuccess) {
-                const stored = localStorage.getItem('lastIrrigationCalendar');
-                if (stored) {
-                    try {
-                        const data = JSON.parse(stored);
-                        console.log('📊 Dashboard: Loaded irrigation data from localStorage fallback:', data);
-                        setIrrigationData(data);
-                    } catch (parseError) {
-                        console.error('Error parsing stored irrigation data:', parseError);
-                    }
-                }
-            }
-
-            setLoading(prev => ({ ...prev, irrigation: false }));
         };
 
         fetchIrrigation();

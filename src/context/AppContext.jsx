@@ -12,7 +12,7 @@ export function AppProvider({ children }) {
 
     // Sidebar states
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+    const [isRightPanelOpen, setIsRightPanelOpen] = useState(false); // Initially closed on load
 
     // Data states
     const today = new Date();
