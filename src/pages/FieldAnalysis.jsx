@@ -710,7 +710,7 @@ function AppContent() {
   const calculateMetrics = (data) => {
     if (!data || data.length === 0) return {};
     const metrics = {};
-    const keys = ['ndvi', 'cwr_mm', 'kc', 'lst_c', 'etc_mm', 'soilmoisture_mm', 'deltas_mm'];
+    const keys = ['ndvi', 'savi', 'evi', 'lai', 'kc', 'cwr_mm', 'lst_c', 'etc_mm', 'soilmoisture_mm', 'deltas_mm'];
     keys.forEach(key => {
       const values = data.map(d => d[key]).filter(v => v !== null && !isNaN(v));
       if (values.length > 0) {
