@@ -66,6 +66,21 @@ const paramColors = {
     pca: { border: 'rgb(156, 39, 176)', background: 'rgba(156, 39, 176, 0.1)' },
 };
 
+function normalizeDateLabel(rawDate) {
+    if (!rawDate) return '';
+    const str = String(rawDate);
+    // Fix malformed YYYYMM-DD (e.g., 200502-15 -> 2025-02-15)
+    const malformed = str.match(/^(\d{6})-(\d{2})$/);
+    if (malformed) {
+        const compact = malformed[1]; // e.g., 202502
+        const year = compact.slice(0, 4);
+        const month = compact.slice(4, 6);
+        const day = malformed[2];
+        return `${year}-${month}-${day}`;
+    }
+    return str;
+}
+
 function ChartPanel({ mode = 'overlay' }) {
     const { chartData, activeChartParam, setActiveChartParam, isDarkMode } = useApp();
     const [selectedWeatherParam, setSelectedWeatherParam] = useState('eto');
@@ -92,7 +107,7 @@ function ChartPanel({ mode = 'overlay' }) {
             return null;
         }
 
-        let labels = chartData.map(d => d.date);
+        let labels = chartData.map(d => normalizeDateLabel(d.date));
         let dataKey = activeChartParam;
         let dataValues = [];
 

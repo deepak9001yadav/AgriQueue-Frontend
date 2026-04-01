@@ -268,9 +268,14 @@ function MapLegend({ layerType, stats }) {
             }
         }
 
+        const hasRange = item.min != null && item.max != null;
+        const labelWithRange = hasRange
+            ? `${label} (${Number(item.min).toFixed(2)} - ${Number(item.max).toFixed(2)})`
+            : label;
+
         return {
             color: item.color,
-            label: label
+            label: labelWithRange
         };
     }) : (legend ? legend.items : []);
 

@@ -36,6 +36,8 @@ function Dashboard() {
     const cropHealthChartRef = useRef(null);
     const vegCoverChartRef = useRef(null);
 
+    const cleanAdvice = (text) => String(text || '').replace(/■/g, '').trim();
+
     // Dark mode toggle
     useEffect(() => {
         const savedMode = localStorage.getItem('darkMode') === 'true';
@@ -1139,7 +1141,7 @@ function Dashboard() {
                                                                     </span>
                                                                 </td>
                                                                 <td>{event.final_irrigation_mm?.toFixed(1)}</td>
-                                                                <td>{event.advice}</td>
+                                                                <td>{cleanAdvice(event.advice)}</td>
                                                             </tr>
                                                         );
                                                     })}

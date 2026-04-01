@@ -97,6 +97,8 @@ function IrrigationCalendarPanel({ onClose }) {
         }
     };
 
+    const cleanAdvice = (text) => String(text || '').replace(/■/g, '').trim();
+
     return (
         <div
             ref={panelRef}
@@ -293,7 +295,7 @@ function IrrigationCalendarPanel({ onClose }) {
                                     color: isDarkMode ? '#ccc' : '#555',
                                     marginBottom: '6px',
                                 }}>
-                                    {event.advice}
+                                    {cleanAdvice(event.advice)}
                                 </div>
                                 <div style={{
                                     display: 'flex',
