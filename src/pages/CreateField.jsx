@@ -458,6 +458,14 @@ function CreateField() {
         };
     }, [isDraggingToolbar]);
 
+    const customIcon = L.icon({
+        iconUrl: '/static/marker.png', // Apni nayi image ka path yahan dalein
+        iconSize: [38, 38],              // Image ki size (width, height)
+        iconAnchor: [19, 38],            // Wo point jahan marker map ko touch karega (bottom center)
+        popupAnchor: [0, -38]            // Popup image ke kitna upar khulega
+    });
+
+
     // Search location
     const searchMapLocation = async () => {
         if (!searchQuery) return;
@@ -476,7 +484,7 @@ function CreateField() {
                 }
 
                 // Add new marker
-                const marker = L.marker(latLng).addTo(mapInstanceRef.current);
+                const marker = L.marker(latLng, { icon: customIcon }).addTo(mapInstanceRef.current);
                 marker.bindPopup(display_name).openPopup();
                 searchMarkerRef.current = marker;
 

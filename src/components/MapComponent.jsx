@@ -232,8 +232,15 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             map.removeLayer(currentSearchMarkerRef.current);
         }
 
+        const customIcon = L.icon({
+            iconUrl: '/static/marker.png', // Apni nayi image ka path yahan dalein
+            iconSize: [38, 38],              // Image ki size (width, height)
+            iconAnchor: [19, 38],            // Wo point jahan marker map ko touch karega (bottom center)
+            popupAnchor: [0, -38]            // Popup image ke kitna upar khulega
+        });
+
         // Add new marker
-        currentSearchMarkerRef.current = L.marker([lat, lon])
+        currentSearchMarkerRef.current = L.marker([lat, lon], { icon: customIcon })
             .addTo(map)
             .bindPopup(`
         <div style="text-align:center;">
