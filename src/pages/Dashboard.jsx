@@ -608,6 +608,7 @@ function Dashboard() {
                     <nav className="nav-links">
                         <Link to="/dashboard" className="nav-link active">Dashboard</Link>
                         <Link to="/fields" className="nav-link">Fields</Link>
+                        <Link to="/expenditures" className="nav-link">Expenditures</Link>
                     </nav>
                 </div>
                 <div className="nav-right">

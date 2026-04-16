@@ -447,6 +447,66 @@ export async function getUserAreaSummary() {
 }
 
 // ===================================================================
+// EXPENDITURE APIs
+// ===================================================================
+
+export async function addExpenditure(expenditureData) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${BASE_URL}/api/add_expenditure`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(expenditureData)
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error adding expenditure:', error);
+        throw error;
+    }
+}
+
+export async function getExpenditures(fieldId = null) {
+    try {
+        const headers = await getAuthHeaders();
+        let url = `${BASE_URL}/api/get_expenditures`;
+        if (fieldId) {
+            url += `?field_id=${fieldId}`;
+        }
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching expenditures:', error);
+        throw error;
+    }
+}
+
+export async function deleteExpenditure(expId) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${BASE_URL}/api/delete_expenditure/${expId}`, {
+            method: 'DELETE',
+            headers
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error deleting expenditure:', error);
+        throw error;
+    }
+}
+
+// ===================================================================
 // Export all API functions
 // ===================================================================
 
@@ -476,4 +536,9 @@ export default {
     // Location
     searchLocation,
     reverseGeocode,
+
+    // Expenditures
+    addExpenditure,
+    getExpenditures,
+    deleteExpenditure,
 };

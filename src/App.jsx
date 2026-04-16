@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Fields from './pages/Fields';
 import CreateField from './pages/CreateField';
 import FieldAnalysis from './pages/FieldAnalysis';
+import Expenditures from './pages/Expenditures';
 import './index.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
@@ -104,6 +105,14 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute>
                         <FieldAnalysis />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/expenditures"
+                element={
+                    <ProtectedRoute>
+                        <Expenditures />
                     </ProtectedRoute>
                 }
             />

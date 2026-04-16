@@ -173,6 +173,7 @@ function Fields() {
                     <nav className="nav-links">
                         <Link to="/dashboard" className="nav-link">Dashboard</Link>
                         <Link to="/fields" className="nav-link active">Fields</Link>
+                        <Link to="/expenditures" className="nav-link">Expenditures</Link>
                     </nav>
                 </div>
                 <div className="nav-right">
