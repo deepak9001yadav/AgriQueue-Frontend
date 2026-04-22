@@ -250,7 +250,7 @@ export async function searchLocation(query) {
                 let displayName = `Coordinates: ${lat}, ${lon}`;
                 try {
                     const reverseResponse = await fetch(
-                        `${BASE_URL}/https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
                     );
                     if (reverseResponse.ok) {
                         const data = await reverseResponse.json();
@@ -271,7 +271,7 @@ export async function searchLocation(query) {
         }
 
         const response = await fetch(
-            `${BASE_URL}/https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`
         );
 
         if (!response.ok) {
@@ -290,7 +290,7 @@ export async function searchLocation(query) {
 export async function reverseGeocode(lat, lng) {
     try {
         const response = await fetch(
-            `${BASE_URL}/https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
         );
 
         if (!response.ok) {
