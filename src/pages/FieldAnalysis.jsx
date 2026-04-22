@@ -394,17 +394,47 @@ function AppContent() {
       setSmartLoader(prev => ({ ...prev, visible: false }));
 
       Swal.fire({
-        icon: 'success',
         title: 'Analysis Complete!',
         html: `
-          <div style="text-align: left; font-size: 0.95em;">
-            <p><strong><i class="fas fa-check-circle" style="color:var(--krishi-green)"></i> Status:</strong> Data successfully analyzed.</p>
-            <p><strong><i class="fas fa-database" style="color:#2196f3"></i> Data Points:</strong> ${data.length} records.</p>
-            <p><strong><i class="fas fa-calendar-alt" style="color:#ff9800"></i> Range:</strong> ${startDate} to ${endDate}</p>
+          <div class="analysis-result-card">
+            <div class="result-item">
+              <div class="result-icon status"><i class="fas fa-check-circle"></i></div>
+              <div class="result-content">
+                <div class="result-label">Status</div>
+                <div class="result-value">Data successfully analyzed</div>
+              </div>
+            </div>
+            <div class="result-item">
+              <div class="result-icon points"><i class="fas fa-database"></i></div>
+              <div class="result-content">
+                <div class="result-label">Data Points</div>
+                <div class="result-value">${data.length} records retrieved</div>
+              </div>
+            </div>
+            <div class="result-item">
+              <div class="result-icon range"><i class="fas fa-calendar-alt"></i></div>
+              <div class="result-content">
+                <div class="result-label">Analysis Range</div>
+                <div class="result-value">
+                  ${startDate} 
+                  <i class="fas fa-long-arrow-alt-right" style="margin: 0 8px; opacity: 0.4;"></i> 
+                  ${endDate}
+                </div>
+              </div>
+            </div>
           </div>
         `,
-        confirmButtonText: 'View Data',
-        confirmButtonColor: 'var(--krishi-green)'
+        icon: 'success',
+        confirmButtonText: 'Explore Insights',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'premium-swal-popup',
+          title: 'premium-swal-title',
+          confirmButton: 'premium-swal-button'
+        },
+        showClass: {
+          popup: 'animate__animated animate__zoomIn animate__faster'
+        }
       });
 
     } catch (error) {
@@ -455,12 +485,16 @@ function AppContent() {
       // Show confirmation toast
       Swal.fire({
         icon: 'success',
-        title: 'Weather Chart Loaded!',
-        text: 'View the data in the bottom chart panel.',
-        position: 'center',
-        showConfirmButton: true,
-        confirmButtonColor: 'var(--krishi-green)',
-        timer: 2000,
+        title: 'Weather Insights Ready',
+        text: 'The weather metrics have been updated in the analytics panel.',
+        confirmButtonText: 'Great!',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'premium-swal-popup',
+          title: 'premium-swal-title',
+          confirmButton: 'premium-swal-button'
+        },
+        timer: 3000,
         timerProgressBar: true
       });
 
@@ -584,11 +618,14 @@ function AppContent() {
     }
     Swal.fire({
       icon: 'success',
-      title: 'Map Cleared',
-      text: 'All layers and data have been removed.',
-      confirmButtonColor: 'var(--krishi-green)',
+      title: 'Workspace Reset',
+      text: 'All active layers and field data have been cleared.',
       timer: 2000,
       showConfirmButton: false,
+      customClass: {
+        popup: 'premium-swal-popup',
+        title: 'premium-swal-title'
+      }
     });
   }, [clearAllData]);
 

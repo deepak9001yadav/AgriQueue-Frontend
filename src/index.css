@@ -1364,79 +1364,129 @@ body.dark-mode .analytics-panel-toggle-btn:hover {
 .map-legend {
   position: absolute;
   top: 16px;
-  right: 16px;
-  /* Positioned relative to main-panel, but might conflict with floating sidebar? */
-  /* Sidebar is on top (z-1200). Legend z-1000. Sidebar covers legend if they overlap. 
-     Sidebar is right: 16px, width: 280px.
-     Legend right: 60px? 
-     If sidebar is open, legend might be behind it. 
-     Legend should be placed to the left of the sidebar?
-     Or inside the sidebar?
-     Usually legend is on map. If sidebar floats, we should move legend.
-     Let's keep it simplest for now, glass style.
-  */
-  right: 320px;
-  /* Push to left of sidebar */
+  right: auto;
+  left: 32px;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 16px;
-  padding: 12px;
+  border-radius: 20px;
+  padding: 0;
   box-shadow: var(--glass-shadow);
   border: 1px solid var(--glass-border);
   z-index: 1100;
-  /* Below sidebar, above map */
-  max-width: 180px;
   width: auto;
-  min-width: 140px;
-  font-size: 11px;
-  cursor: grab;
+  min-width: 160px;
+  max-width: 280px;
+  cursor: pointer;
   user-select: none;
-  transition: right 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
-/* If sidebar collapsed, move legend back? Need JS or peer selector? 
-   CSS doesn't know sidebar state unless parent class changes.
-   FieldAnalysis has `sidebar-collapsed` class on main-container?
-   But analytics sidebar state is different.
-   Let's just position it safely or accept overlap (user can close sidebar).
-   Safe position: right: 20px is standard. Sidebar covers it. User closes sidebar -> sees legend.
-   Or move legend to bottom left/right.
-*/
-.map-legend h4 {
-  margin: 0 0 8px 0;
-  font-size: 12px;
+.map-legend.collapsed {
+  min-width: unset;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.map-legend.collapsed:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.legend-toggle-icon {
+  font-size: 14px;
+  color: var(--krishi-green);
+  transition: transform 0.3s ease;
+}
+
+.legend-title {
+  font-size: 13px;
   font-weight: 700;
-  text-align: center;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  color: var(--text-main);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.legend-preview-colors {
+  display: flex;
+  margin-left: auto;
+  padding-left: 10px;
+}
+
+.preview-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: -4px;
+  border: 1px solid white;
+}
+
+.legend-body {
+  padding: 0 14px 14px 14px;
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.legend-content-wrapper {
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 12px;
+}
+
+.legend-gradient-bar {
+  width: 14px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .legend-scale {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  line-height: 1.2;
-  color: var(--text-secondary);
-  font-weight: 500;
+  gap: 10px;
+  padding: 2px 0;
 }
 
-.legend-color {
-  width: 18px;
-  height: 14px;
-  min-width: 18px;
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
   flex-shrink: 0;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1.5px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.legend-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.map-legend h4 {
+  display: none; /* Replaced by legend-header title */
 }
 
 .legend-label {
@@ -1782,7 +1832,7 @@ body.dark-mode .analytics-panel-toggle-btn:hover {
 
 .irrigation-calendar-panel.expanded {
   width: 80%;
-  height: 85%;
+  height: 70%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -3111,6 +3161,145 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     flex 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     margin 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Premium SweetAlert2 Styling */
+.premium-swal-popup {
+  border-radius: 24px !important;
+  padding: 1.5rem !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+  font-family: var(--font-sans) !important;
+  width: 400px !important;
+}
+
+.premium-swal-title {
+  font-family: var(--font-display) !important;
+  font-weight: 800 !important;
+  font-size: 1.5rem !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 0.5rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.premium-swal-button {
+  padding: 12px 32px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-transform: none !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 8px 20px rgba(0, 200, 83, 0.25) !important;
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%) !important;
+  border: none !important;
+  color: white !important;
+  cursor: pointer !important;
+  margin-top: 0.5rem !important;
+}
+
+.premium-swal-button:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px rgba(0, 200, 83, 0.35) !important;
+  background: linear-gradient(135deg, #00e760 0%, #00c853 100%) !important;
+}
+
+/* Analysis Result Card Styles */
+.analysis-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1.5px solid #f1f5f9;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.result-item:hover {
+  background: #ffffff;
+  transform: translateX(8px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+  border-color: var(--krishi-green-light);
+}
+
+.result-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.result-icon.status {
+  background: rgba(0, 200, 83, 0.12);
+  color: #00c853;
+}
+
+.result-icon.points {
+  background: rgba(33, 150, 243, 0.12);
+  color: #2196f3;
+}
+
+.result-icon.range {
+  background: rgba(255, 152, 0, 0.12);
+  color: #ff9800;
+}
+
+.result-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.result-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Global SweetAlert Overrides */
+.swal2-styled.swal2-confirm {
+  border-radius: 12px !important;
+  background: var(--krishi-green) !important;
+  font-weight: 600 !important;
+  padding: 10px 24px !important;
+}
+
+.swal2-popup {
+  border-radius: 24px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+.swal2-icon {
+  margin: 0.5rem auto 1rem !important;
+  transform: scale(0.8);
+}
+
+.swal2-html-container {
+  margin: 0 !important;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────── */

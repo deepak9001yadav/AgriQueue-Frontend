@@ -233,41 +233,29 @@ function MapLegend({ layerType, stats }) {
     const { isDarkMode } = useApp();
     const [position, setPosition] = useState({ x: 20, y: 80 });
     const [isDragging, setIsDragging] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false); // Default to collapsed
     const dragStartRef = useRef({ x: 0, y: 0 });
+    const dragMovedRef = useRef(false);
     const legendRef = useRef(null);
 
     const legend = layerLegends[layerType];
 
     // Determine items to display: Prefer dynamic 'stats' if it's an array (VRA classes), otherwise use static legend
     const displayItems = Array.isArray(stats) ? stats.map((item, i) => {
-        // Initialize label with descriptive text if possible, otherwise keep 'Zone X' as last resort
         let label = `Zone ${item['class']}`;
-
-        // ----------------------------------------------------------------------------------
-        // DYNAMIC LEGEND LABEL MATCHING LOGIC
-        // ----------------------------------------------------------------------------------
         if (legend && legend.items) {
-            // 1. Try Precise Color Match (Best)
             let staticItem = legend.items.find(si =>
                 si.color.toLowerCase() === item.color.toLowerCase()
             );
-
-            // 2. Fallback: Structural Match (Reverse Order)
-            // Backend lists classes Low->High (Ascending). 
-            // Frontend legend usually lists High->Low (Descending).
-            // IF counts match (e.g. 5 vs 5), map index i to (len - 1 - i).
-            // This ensures we always show a descriptive label even if colors slightly differ.
             if (!staticItem) {
                 if (legend.items.length === stats.length) {
                     staticItem = legend.items[legend.items.length - 1 - i];
                 }
             }
-
             if (staticItem) {
                 label = staticItem.label;
             }
         }
-
         const hasRange = item.min != null && item.max != null;
         const labelWithRange = hasRange
             ? `${label} (${Number(item.min).toFixed(2)} - ${Number(item.max).toFixed(2)})`
@@ -279,12 +267,11 @@ function MapLegend({ layerType, stats }) {
         };
     }) : (legend ? legend.items : []);
 
-
-
     const title = legend ? legend.title : layerType;
 
     const handleMouseDown = (e) => {
         setIsDragging(true);
+        dragMovedRef.current = false;
         dragStartRef.current = {
             x: e.clientX - position.x,
             y: e.clientY - position.y,
@@ -294,38 +281,37 @@ function MapLegend({ layerType, stats }) {
     const handleMouseMove = (e) => {
         if (!isDragging || !legendRef.current) return;
 
-        // Get legend dimensions
-        const legendRect = legendRef.current.getBoundingClientRect();
-        const legendWidth = legendRect.width;
-        const legendHeight = legendRect.height;
+        dragMovedRef.current = true;
 
-        // Get map container bounds (assuming legend is inside .main-panel)
         const mapContainer = legendRef.current.closest('.main-panel');
         if (!mapContainer) return;
 
         const containerRect = mapContainer.getBoundingClientRect();
+        const legendRect = legendRef.current.getBoundingClientRect();
 
-        // Calculate new position
         let newX = e.clientX - dragStartRef.current.x;
         let newY = e.clientY - dragStartRef.current.y;
 
-        // Constrain within map bounds
         const minX = 10;
         const minY = 10;
-        const maxX = containerRect.width - legendWidth - 10;
-        const maxY = containerRect.height - legendHeight - 10;
+        const maxX = containerRect.width - legendRect.width - 10;
+        const maxY = containerRect.height - legendRect.height - 10;
 
         newX = Math.max(minX, Math.min(newX, maxX));
         newY = Math.max(minY, Math.min(newY, maxY));
 
-        setPosition({
-            x: newX,
-            y: newY,
-        });
+        setPosition({ x: newX, y: newY });
     };
 
     const handleMouseUp = () => {
         setIsDragging(false);
+    };
+
+    const toggleExpand = (e) => {
+        // Only toggle if we didn't actually drag the element
+        if (!dragMovedRef.current) {
+            setIsExpanded(!isExpanded);
+        }
     };
 
     useEffect(() => {
@@ -347,49 +333,47 @@ function MapLegend({ layerType, stats }) {
     return (
         <div
             ref={legendRef}
-            className="map-legend"
+            className={`map-legend ${isExpanded ? 'expanded' : 'collapsed'}`}
             style={{
                 position: 'absolute',
                 top: position.y,
-                right: 'auto',
                 left: position.x,
-                cursor: isDragging ? 'grabbing' : 'grab',
+                cursor: isDragging ? 'grabbing' : 'pointer',
             }}
             onMouseDown={handleMouseDown}
+            onClick={toggleExpand}
         >
-            <h4>{title}</h4>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <div
-                    style={{
-                        width: '16px',
-                        borderRadius: '8px',
-                        background: displayItems.length > 1 ? `linear-gradient(to bottom, ${displayItems.map(item => item.color).join(', ')})` : (displayItems[0]?.color || 'transparent'),
-                        flexShrink: 0
-                    }}
-                ></div>
-                <div className="legend-scale" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
-                    {displayItems.map((item, index) => (
-                        <div key={index} className="legend-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: 0 }}>
-                            <span
-                                style={{
-                                    backgroundColor: item.color,
-                                    width: '10px',
-                                    height: '10px',
-                                    borderRadius: '50%',
-                                    display: 'inline-block',
-                                    flexShrink: 0,
-                                    border: '1px solid rgba(0,0,0,0.1)'
-                                }}
-                            ></span>
-                            <span className="legend-label" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                {item.label}
-                            </span>
-                        </div>
+            <div className="legend-header">
+                {/*<i className={`fas ${isExpanded ? 'fa-chevron-down' : 'fa-list-ul'} legend-toggle-icon`}></i>*/}
+                <span className="legend-title">{isExpanded ? title : 'Legend'}</span>
+                {!isExpanded && <div className="legend-preview-colors">
+                    {displayItems.slice(0, 3).map((item, i) => (
+                        <div key={i} className="preview-dot" style={{ backgroundColor: item.color }}></div>
                     ))}
-                </div>
+                </div>}
             </div>
 
-
+            {isExpanded && (
+                <div className="legend-body">
+                    <div className="legend-content-wrapper">
+                        <div className="legend-gradient-bar"
+                            style={{
+                                background: displayItems.length > 1
+                                    ? `linear-gradient(to bottom, ${displayItems.map(item => item.color).join(', ')})`
+                                    : (displayItems[0]?.color || 'transparent'),
+                            }}
+                        ></div>
+                        <div className="legend-scale">
+                            {displayItems.map((item, index) => (
+                                <div key={index} className="legend-item">
+                                    <span className="legend-dot" style={{ backgroundColor: item.color }}></span>
+                                    <span className="legend-label">{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
