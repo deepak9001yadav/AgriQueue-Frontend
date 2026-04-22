@@ -390,16 +390,20 @@
     gap: 6px;
 }
 
-.field-badge::before {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: currentColor;
+.field-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
 }
 
-.field-delete-btn {
+.field-card:hover .field-actions {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.field-delete-btn, .field-edit-btn {
     width: 32px;
     height: 32px;
     border: none;
@@ -412,12 +416,14 @@
     justify-content: center;
     transition: all 0.2s ease;
     font-size: 14px;
-    opacity: 0;
-    /* Keep hidden until hover */
-    transform: translateX(10px);
 }
 
-.field-card:hover .field-delete-btn {
+.field-edit-btn:hover {
+    background: rgba(0, 200, 83, 0.1);
+    color: var(--krishi-green);
+}
+
+.field-card:hover .field-actions {
     opacity: 1;
     transform: translateX(0);
 }

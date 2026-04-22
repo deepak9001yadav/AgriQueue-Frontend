@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getFields, deleteField, getUserAreaSummary } from '../utils/api';
+import { getFields, deleteField, updateField, getUserAreaSummary } from '../utils/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import './Fields.css';
 
 function Fields() {
@@ -73,6 +74,58 @@ function Fields() {
     const handleFieldClick = (field) => {
         navigate(`/app?field_id=${field.id}`);
     };
+    const handleEditField = async (e, field) => {
+        // CRITICAL: Stop ALL event propagation
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.nativeEvent) {
+            e.nativeEvent.stopImmediatePropagation();
+        }
+
+        const { value: newName } = await Swal.fire({
+            title: 'Edit Field Name',
+            input: 'text',
+            inputLabel: 'Enter new field name',
+            inputValue: field.name,
+            showCancelButton: true,
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Field name cannot be empty!';
+                }
+            },
+            confirmButtonColor: 'var(--krishi-green)',
+            cancelButtonColor: '#d33',
+            customClass: {
+                popup: 'premium-swal-popup',
+                title: 'premium-swal-title',
+                confirmButton: 'premium-swal-button',
+                cancelButton: 'premium-swal-button-secondary'
+            }
+        });
+
+        if (newName && newName !== field.name) {
+            try {
+                // Step 1: Backend Update
+                await updateField(field.id, { name: newName });
+
+                // Step 2: Local State Update
+                setFields(prevFields =>
+                    prevFields.map(f => f.id === field.id ? { ...f, name: newName } : f)
+                );
+
+                // Step 3: Update localStorage Fallback
+                const storedFields = JSON.parse(localStorage.getItem('fields') || '[]');
+                const updatedStoredFields = storedFields.map(f => f.id === field.id ? { ...f, name: newName } : f);
+                localStorage.setItem('fields', JSON.stringify(updatedStoredFields));
+
+                toast.success('Field name updated successfully!');
+            } catch (error) {
+                console.error('⚠️ Error updating field name:', error);
+                toast.error('Failed to update field name.');
+            }
+        }
+    };
+
     const handleDeleteField = async (e, fieldId) => {
         // CRITICAL: Stop ALL event propagation
         e.preventDefault();
@@ -168,7 +221,7 @@ function Fields() {
             <header className="fields-header">
                 <div className="nav-left">
                     <Link to="/dashboard" className="brand">
-                        <img src="/static/Logo.jpg" alt="KrishiZest" style={{ height: 60 }} />
+                        <img src="/static/Logo.jpg" alt="KrishiZest" style={{ height: 48 }} />
                     </Link>
                     <nav className="nav-links">
                         <Link to="/dashboard" className="nav-link">Dashboard</Link>
@@ -268,13 +321,22 @@ function Fields() {
                             >
                                 <div className="field-card-top">
                                     <span className="field-badge">Field {index + 1}</span>
-                                    <button
-                                        className="field-delete-btn"
-                                        onClick={(e) => handleDeleteField(e, field.id)}
-                                        title="Delete"
-                                    >
-                                        <i className="fas fa-trash-alt"></i>
-                                    </button>
+                                    <div className="field-actions">
+                                        <button
+                                            className="field-edit-btn"
+                                            onClick={(e) => handleEditField(e, field)}
+                                            title="Edit Name"
+                                        >
+                                            <i className="fas fa-edit"></i>
+                                        </button>
+                                        <button
+                                            className="field-delete-btn"
+                                            onClick={(e) => handleDeleteField(e, field.id)}
+                                            title="Delete"
+                                        >
+                                            <i className="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="field-card-body">
                                     <h3 className="field-name">{field.name}</h3>
