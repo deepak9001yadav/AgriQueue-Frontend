@@ -339,6 +339,7 @@ function MapLegend({ layerType, stats }) {
                 top: position.y,
                 left: position.x,
                 cursor: isDragging ? 'grabbing' : 'pointer',
+                transition: isDragging ? 'none' : 'all 0.3s ease',
             }}
             onMouseDown={handleMouseDown}
             onClick={toggleExpand}
