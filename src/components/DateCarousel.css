@@ -135,28 +135,53 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    font-size: 0.6rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    background: #f0fdf4;
-    color: #16a34a;
-    border: 1px solid #dcfce7;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 8px;
     border-radius: 20px;
     transition: all 0.2s ease;
-    width: 85%;
+    width: 90%;
+    border-width: 1.5px;
+    border-style: solid;
+}
+
+/* Color Coding based on cloud percentage */
+.date-cloud-badge.clear {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+}
+
+.date-cloud-badge.warning {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fef3c7;
+}
+
+.date-cloud-badge.critical {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
 }
 
 .date-card.selected .date-cloud-badge {
     background: white;
-    color: #22c55e;
     border-color: white;
 }
+
+.date-card.selected .date-cloud-badge.clear { color: #16a34a; }
+.date-card.selected .date-cloud-badge.warning { color: #d97706; }
+.date-card.selected .date-cloud-badge.critical { color: #dc2626; }
 
 .cloud-icon-mini {
     display: flex;
     align-items: center;
-    opacity: 0.9;
+    justify-content: center;
+}
+
+.cloud-icon-mini svg {
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.05));
 }
 
 .carousel-nav-btn {

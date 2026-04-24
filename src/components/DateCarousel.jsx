@@ -110,14 +110,16 @@ const DateCarousel = ({ onDateSelect }) => {
                                     <span className="date-month">{month}</span>
                                     <span className="date-year">{year}</span>
                                 </div>
-                                
-                                <div className="date-cloud-badge">
+                                                                <div className={`date-cloud-badge ${
+                                    getCloudPctDisplay(item) > 80 ? 'critical' : 
+                                    getCloudPctDisplay(item) > 30 ? 'warning' : 'clear'
+                                }`}>
                                     <div className="cloud-icon-mini">
-                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
-                                            <path d="M17.5,19c-3.037,0-5.5-2.463-5.5-5.5c0-0.038,0.002-0.076,0.005-0.113C10.222,12.518,9,10.903,9,9c0-2.209,1.791-4,4-4 c0.218,0,0.43,0.018,0.635,0.052C14.498,3.398,16.113,2,18,2c2.209,0,4,1.791,4,4c0,0.187-0.013,0.37-0.038,0.55 C22.903,7.498,24,9.113,24,11c0,2.209-1.791,4-4,4c-0.187,0-0.37-0.013-0.55-0.038C18.502,17.602,16.887,19,15,19 c-0.11,0-0.218-0.004-0.325-0.012C14.113,21.311,12,23,9.5,23C6.463,23,4,20.537,4,17.5c0-0.11,0.004-0.218,0.012-0.325 C1.689,16.613,0,14.5,0,12c0-3.314,2.686-6,6-6c0.187,0,0.37,0.01,0.55,0.028C7.602,3.387,9.713,2,12,2c2.485,0,4.5,2.015,4.5,4.5 c0,0.204-0.014,0.404-0.04,0.6C17.498,7.387,18.613,8.5,20,8.5c1.381,0,2.5,1.119,2.5,2.5c0,1.381-1.119,2.5-2.5,2.5 c-0.204,0-0.404-0.014-0.6-0.04C18.613,14.502,17.5,15.613,17.5,17V19z"/>
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M17.5 19c3.037 0 5.5-2.463 5.5-5.5 0-2.97-2.354-5.382-5.28-5.492C17.433 4.116 14.156 1.5 10.5 1.5 6.136 1.5 2.6 4.936 2.502 9.245 0.536 10.147 0 12.015 0 14c0 3.314 2.686 6 6 6h11.5"></path>
                                         </svg>
                                     </div>
-                                    {getCloudPctDisplay(item)}%
+                                    <span>{getCloudPctDisplay(item)}%</span>
                                 </div>
                             </div>
                         );
