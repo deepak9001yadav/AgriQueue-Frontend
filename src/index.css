@@ -1365,7 +1365,7 @@ body.dark-mode .analytics-panel-toggle-btn:hover {
   position: absolute;
   top: 16px;
   right: auto;
-  left: 32px;
+  left:30px;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

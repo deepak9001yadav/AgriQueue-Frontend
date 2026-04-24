@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Yeh logic local ke liye 5500 aur live/build ke liye Render ka URL set karega
+// Yeh logic local ke liye 3000 aur live/build ke liye Render ka URL set karega
 const backendUrl = process.env.NODE_ENV === 'production'
   ? 'https://agritour-backend.onrender.com'
   : 'http://localhost:5000';
+
 
 // https://vite.dev/config/
 export default defineConfig({

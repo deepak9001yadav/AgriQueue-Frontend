@@ -344,6 +344,7 @@ function MapLegend({ layerType, stats }) {
             onMouseDown={handleMouseDown}
             onClick={toggleExpand}
         >
+
             <div className="legend-header">
                 {/*<i className={`fas ${isExpanded ? 'fa-chevron-down' : 'fa-list-ul'} legend-toggle-icon`}></i>*/}
                 <span className="legend-title">{isExpanded ? title : 'Legend'}</span>
