@@ -15,7 +15,8 @@ const DateCarousel = ({ onDateSelect }) => {
             
             setLoading(true);
             try {
-                const response = await fetch('http://localhost:5000/api/s2_cloud_info', {
+                const BASE_URL = import.meta.env.VITE_API_URL || "";
+                const response = await fetch(`${BASE_URL}/api/s2_cloud_info`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
