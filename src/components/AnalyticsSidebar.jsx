@@ -346,7 +346,7 @@ function AnalyticsSidebar() {
                     </div>
 
                     {/* Additional Stats Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
+                    <div className="analytics-stats-grid">
                         <div style={{ padding: '10px', background: isDarkMode ? '#2c2f32' : '#f8fafc', borderRadius: '8px', textAlign: 'center' }}>
                             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Min</div>
                             <div style={{ fontWeight: 'bold', fontSize: '14px', color: isDarkMode ? '#e8e6e3' : '#333' }}>{genericStats.min?.toFixed(2)}</div>
@@ -748,7 +748,7 @@ function AnalyticsSidebar() {
                             {/* Detailed Tab */}
                             {activeTab === 'detailed' && (
                                 <div className="fade-in">
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                                    <div className="analytics-stats-grid">
                                         {[
                                             { label: 'opt_min', val: stats?.min, icon: 'fa-arrow-down', color: '#ef4444' },
                                             { label: 'opt_max', val: stats?.max, icon: 'fa-arrow-up', color: '#22c55e' },

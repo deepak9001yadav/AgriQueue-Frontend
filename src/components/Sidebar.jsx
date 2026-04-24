@@ -115,6 +115,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
     const today = new Date().toISOString().split('T')[0];
 
     const allLayers = [
+        { id: 'tcc', icon: 'fa-image', label: 'TCC', color: '#8bc34a', img: img_rgb },
         { id: 'rgb', icon: 'fa-layer-group', label: 'FCC', color: '#3f51b5', img: img_rgb },
         { id: 'pca', icon: 'fa-wand-magic-sparkles', label: 'Crop Health', color: '#9c27b0', img: img_ndvi },
         { id: 'ndvi', icon: 'fa-leaf', label: 'NDVI', color: '#4caf50', img: img_ndvi },

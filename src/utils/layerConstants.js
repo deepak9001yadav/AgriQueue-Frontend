@@ -1,6 +1,7 @@
 // Layer Display Names Mapping
 export const LAYER_DISPLAY_NAMES = {
     // Standard Layers
+    'tcc': 'TCC (True Color)',
     'rgb': 'FCC',
     'ndvi': 'NDVI (Vegetation)',
     'savi': 'SAVI (Soil Adjusted)',

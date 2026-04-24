@@ -781,6 +781,7 @@ input[type="text"]:focus {
   flex-direction: column;
   background: #eef2f6;
   overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .map-container {
@@ -1332,6 +1333,19 @@ body.dark-mode .analytics-panel-toggle-btn:hover {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.analytics-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1200px) {
+  .analytics-stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .detailed-stat-card:hover {

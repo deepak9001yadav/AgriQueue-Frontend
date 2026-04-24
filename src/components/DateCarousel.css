@@ -194,3 +194,48 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+    .date-carousel-container {
+        padding: 8px 10px;
+        bottom: 10px;
+        max-width: 95%;
+        border-radius: 12px;
+    }
+    
+    .date-carousel-header {
+        margin-bottom: 4px;
+    }
+    
+    .date-carousel-title {
+        font-size: 0.8rem;
+    }
+    
+    .date-card {
+        width: 60px;
+        height: 68px;
+        border-radius: 10px;
+    }
+    
+    .date-day {
+        font-size: 1rem;
+    }
+    
+    .date-month {
+        font-size: 0.55rem;
+    }
+    
+    .date-cloud-badge {
+        font-size: 0.5rem;
+        padding: 1px 4px;
+    }
+    
+    .carousel-nav-btn {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .date-carousel-wrapper {
+        gap: 6px;
+    }
+}

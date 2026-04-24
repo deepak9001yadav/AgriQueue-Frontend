@@ -307,6 +307,40 @@ function MapLegend({ layerType, stats }) {
         setIsDragging(false);
     };
 
+    // Clamp position on window resize or container change
+    useEffect(() => {
+        const clampPosition = () => {
+            if (!legendRef.current) return;
+            const mapContainer = legendRef.current.closest('.main-panel');
+            if (!mapContainer) return;
+
+            const containerRect = mapContainer.getBoundingClientRect();
+            const legendRect = legendRef.current.getBoundingClientRect();
+
+            const minX = 10;
+            const minY = 10;
+            const maxX = Math.max(minX, containerRect.width - legendRect.width - 10);
+            const maxY = Math.max(minY, containerRect.height - legendRect.height - 10);
+
+            setPosition(prev => ({
+                x: Math.max(minX, Math.min(prev.x, maxX)),
+                y: Math.max(minY, Math.min(prev.y, maxY))
+            }));
+        };
+
+        const resizeObserver = new ResizeObserver(clampPosition);
+        const mapContainer = legendRef.current?.closest('.main-panel');
+        if (mapContainer) {
+            resizeObserver.observe(mapContainer);
+        }
+
+        window.addEventListener('resize', clampPosition);
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', clampPosition);
+        };
+    }, []);
+
     const toggleExpand = (e) => {
         // Only toggle if we didn't actually drag the element
         if (!dragMovedRef.current) {
@@ -339,7 +373,8 @@ function MapLegend({ layerType, stats }) {
                 top: position.y,
                 left: position.x,
                 cursor: isDragging ? 'grabbing' : 'pointer',
-                transition: isDragging ? 'none' : 'all 0.3s ease',
+                transition: isDragging ? 'none' : 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                zIndex: 1100
             }}
             onMouseDown={handleMouseDown}
             onClick={toggleExpand}
