@@ -35,11 +35,11 @@ const layerLegends = {
     cwsi: {
         title: 'CWSI (Water Stress)',
         items: [
-            { color: '#FF0000', label: 'Extreme' },
-            { color: '#FF6666', label: 'Moderate' },
-            { color: '#FFFF00', label: 'Need Attention' },
-            { color: '#87CEEB', label: 'Fair' },
-            { color: '#0000FF', label: 'Healthy' },
+            { color: '#E57373', label: 'Extreme' },
+            { color: '#FFB74D', label: 'Moderate' },
+            { color: '#FFF176', label: 'Need Attention' },
+            { color: '#81D4FA', label: 'Fair' },
+            { color: '#29B6F6', label: 'Healthy' },
         ],
     },
     lst: {
@@ -132,9 +132,9 @@ const layerLegends = {
         items: [
             { color: '#E57373', label: 'Severe Stress' },
             { color: '#FFB74D', label: 'High Stress' },
-            { color: '#FFFF8D', label: 'Moderate' },
-            { color: '#4FC3F7', label: 'Low Stress' },
-            { color: '#81D4FA', label: 'No Stress' },
+            { color: '#FFF176', label: 'Moderate' },
+            { color: '#81D4FA', label: 'Low Stress' },
+            { color: '#29B6F6', label: 'No Stress' },
         ],
     },
     vra_irrigation_need: {
