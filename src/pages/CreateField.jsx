@@ -357,41 +357,41 @@ function CreateField() {
         Swal.close();
 
         const { value: formValues } = await Swal.fire({
-            title: 'Field Details',
+            title: 'Field Details / खेत का विवरण',
             html: `
                 <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding-top: 10px;">
                     <div>
-                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Field Name *</label>
-                        <input id="swal-name" class="swal2-input" placeholder="e.g., North Field" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Field Name / खेत का नाम *</label>
+                        <input id="swal-name" class="swal2-input" placeholder="e.g., North Field / उत्तर का खेत" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
                     </div>
                     
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
-                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">District</label>
-                            <input id="swal-district" class="swal2-input" value="${fetchedDistrict}" placeholder="District" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">District / ज़िला</label>
+                            <input id="swal-district" class="swal2-input" value="${fetchedDistrict}" placeholder="ज़िला" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
                         </div>
                         <div style="flex: 1;">
-                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Village</label>
-                            <input id="swal-village" class="swal2-input" value="${fetchedVillage}" placeholder="Village" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Village / गाँव</label>
+                            <input id="swal-village" class="swal2-input" value="${fetchedVillage}" placeholder="गाँव" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
                         </div>
                     </div>
                     
                     <div>
-                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Crop Type</label>
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Crop Type / फसल का प्रकार</label>
                         <select id="swal-crop-type" class="swal2-select" style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
-                            <option value="">Select Crop Type</option>
-                            <option value="Cereal">Cereal (e.g. Wheat, Rice)</option>
-                            <option value="Legume">Legume (e.g. Beans, Lentils)</option>
-                            <option value="Vegetable">Vegetable (e.g. Tomato, Potato)</option>
-                            <option value="Fruit">Fruit (e.g. Apple, Mango)</option>
-                            <option value="Cash Crop">Cash Crop (e.g. Cotton, Sugarcane)</option>
-                            <option value="Other">Other</option>
+                            <option value="">Select / चुनें</option>
+                            <option value="Cereal">Cereal / अनाज (e.g. Wheat, Rice / गेहूँ, धान)</option>
+                            <option value="Legume">Legume / दालें (e.g. Beans, Lentils / चना, अरहर)</option>
+                            <option value="Vegetable">Vegetable / सब्जियां (e.g. Tomato, Potato / टमाटर, आलू)</option>
+                            <option value="Fruit">Fruit / फल (e.g. Apple, Mango / सेब, आम)</option>
+                            <option value="Cash Crop">Cash Crop / नकदी फसल (e.g. Cotton, Sugarcane / कपास, गन्ना)</option>
+                            <option value="Other">Other / अन्य</option>
                         </select>
                     </div>
 
                     <div>
-                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Crop Name</label>
-                        <input id="swal-crop-name" class="swal2-input" placeholder="e.g., Wheat, Tomato" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Crop Name / फसल का नाम</label>
+                        <input id="swal-crop-name" class="swal2-input" placeholder="e.g., Wheat, Tomato / गेहूँ, टमाटर" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
                     </div>
                 </div>
             `,
@@ -399,7 +399,8 @@ function CreateField() {
             showCancelButton: true,
             confirmButtonColor: '#2f7a2f',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Save Field',
+            confirmButtonText: 'Save / सहेजें',
+            cancelButtonText: 'Cancel / रद्द करें',
             width: '450px',
             preConfirm: () => {
                 const name = document.getElementById('swal-name').value;

@@ -555,7 +555,7 @@ function Fields() {
                                                         <i className="fas fa-seedling" style={{ color: 'var(--primary-green)' }}></i>
                                                         <span>{field.cropName || field.cropType}</span>
                                                     </div>
-                                                ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>Not specified</span>}
+                                                ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>Not specified / निर्दिष्ट नहीं</span>}
                                             </td>
                                             <td className="row-stat-col">{field.areaHectares} ha</td>
                                             <td className="row-stat-col">{field.areaAcres} ac</td>
