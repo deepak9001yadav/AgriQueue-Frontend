@@ -488,6 +488,12 @@ function Fields() {
                                             <i className="fas fa-map-marker-alt" style={{ color: 'var(--primary-green)' }}></i>
                                             <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
                                         </div>
+                                        {(field.cropType || field.cropName) && (
+                                            <div className="field-crop-info" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <i className="fas fa-seedling" style={{ color: 'var(--primary-green)' }}></i>
+                                                <span>{field.cropName || field.cropType} {field.cropName && field.cropType ? `(${field.cropType})` : ''}</span>
+                                            </div>
+                                        )}
                                         <div className="field-stats">
                                             <div className="field-stat">
                                                 <span className="stat-value">{field.areaHectares}</span>
@@ -516,6 +522,7 @@ function Fields() {
                                     <th>#</th>
                                     <th>Field Name</th>
                                     <th>Location (Village, District)</th>
+                                    <th>Crop</th>
                                     <th>Area (Hectares)</th>
                                     <th>Area (Acres)</th>
                                     <th className="actions-header">Actions</th>
@@ -541,6 +548,14 @@ function Fields() {
                                                     <i className="fas fa-map-marker-alt marker-icon"></i>
                                                     <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
                                                 </div>
+                                            </td>
+                                            <td className="row-crop-col">
+                                                {field.cropName || field.cropType ? (
+                                                    <div className="row-crop" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: '#555' }}>
+                                                        <i className="fas fa-seedling" style={{ color: 'var(--primary-green)' }}></i>
+                                                        <span>{field.cropName || field.cropType}</span>
+                                                    </div>
+                                                ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>Not specified</span>}
                                             </td>
                                             <td className="row-stat-col">{field.areaHectares} ha</td>
                                             <td className="row-stat-col">{field.areaAcres} ac</td>

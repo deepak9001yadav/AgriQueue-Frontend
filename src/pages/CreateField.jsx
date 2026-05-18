@@ -312,65 +312,129 @@ function CreateField() {
             return;
         }
 
-        const { value: fieldName } = await Swal.fire({
-            title: 'Enter Field Name',
-            input: 'text',
-            inputLabel: 'Field Name',
-            inputPlaceholder: 'e.g., North Field, Rice Paddy 1',
-            showCancelButton: true,
-            confirmButtonColor: '#2f7a2f',
-            cancelButtonColor: '#d33',
-            inputValidator: (value) => {
-                if (!value) return 'Please enter a field name!';
+        const layer = currentLayerRef.current;
+        const type = getLayerType(layer);
+        let geometry;
+        let area = 0;
+        let center = null;
+
+        if (type === 'circle') {
+            const centerPt = layer.getLatLng();
+            const radius = layer.getRadius();
+            geometry = { type: 'Circle', center: [centerPt.lat, centerPt.lng], radius };
+            area = Math.PI * radius * radius;
+            center = centerPt;
+        } else {
+            geometry = layer.toGeoJSON().geometry;
+            area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+            center = layer.getBounds().getCenter();
+        }
+
+        // Show loading state while fetching location details
+        Swal.fire({
+            title: 'Gathering Information...',
+            text: 'Fetching location details based on drawn area...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
             }
         });
 
-            if (fieldName) {
-            const layer = currentLayerRef.current;
-            const type = getLayerType(layer);
-            let geometry;
-            let area = 0;
-            let center = null;
-
-            if (type === 'circle') {
-                const centerPt = layer.getLatLng();
-                const radius = layer.getRadius();
-                geometry = { type: 'Circle', center: [centerPt.lat, centerPt.lng], radius };
-                area = Math.PI * radius * radius;
-                center = centerPt;
-            } else {
-                geometry = layer.toGeoJSON().geometry;
-                area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
-                center = layer.getBounds().getCenter();
+        // Fetch district and village based on center
+        let fetchedDistrict = '';
+        let fetchedVillage = '';
+        if (center) {
+            try {
+                const locationDetails = await getLocationDetails(center.lat, center.lng);
+                fetchedDistrict = locationDetails.district || '';
+                fetchedVillage = locationDetails.village || '';
+            } catch (e) {
+                console.error("Error fetching location", e);
             }
+        }
 
-            // Show loading state while fetching location details
+        // Close loading modal before showing the input form
+        Swal.close();
+
+        const { value: formValues } = await Swal.fire({
+            title: 'Field Details',
+            html: `
+                <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding-top: 10px;">
+                    <div>
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Field Name *</label>
+                        <input id="swal-name" class="swal2-input" placeholder="e.g., North Field" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">District</label>
+                            <input id="swal-district" class="swal2-input" value="${fetchedDistrict}" placeholder="District" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Village</label>
+                            <input id="swal-village" class="swal2-input" value="${fetchedVillage}" placeholder="Village" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Crop Type</label>
+                        <select id="swal-crop-type" class="swal2-select" style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
+                            <option value="">Select Crop Type</option>
+                            <option value="Cereal">Cereal (e.g. Wheat, Rice)</option>
+                            <option value="Legume">Legume (e.g. Beans, Lentils)</option>
+                            <option value="Vegetable">Vegetable (e.g. Tomato, Potato)</option>
+                            <option value="Fruit">Fruit (e.g. Apple, Mango)</option>
+                            <option value="Cash Crop">Cash Crop (e.g. Cotton, Sugarcane)</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">Crop Name</label>
+                        <input id="swal-crop-name" class="swal2-input" placeholder="e.g., Wheat, Tomato" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                    </div>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonColor: '#2f7a2f',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Save Field',
+            width: '450px',
+            preConfirm: () => {
+                const name = document.getElementById('swal-name').value;
+                const district = document.getElementById('swal-district').value;
+                const village = document.getElementById('swal-village').value;
+                const cropType = document.getElementById('swal-crop-type').value;
+                const cropName = document.getElementById('swal-crop-name').value;
+                
+                if (!name) {
+                    Swal.showValidationMessage('Please enter a field name');
+                    return false;
+                }
+                return { name, district, village, cropType, cropName };
+            }
+        });
+
+        if (formValues) {
             Swal.fire({
-                title: 'Saving Field...',
-                text: 'Fetching location details...',
+                title: 'Saving...',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
                 }
             });
 
-            // Fetch district and village based on center
-            let district = 'NA';
-            let village = 'NA';
-            if (center) {
-                const locationDetails = await getLocationDetails(center.lat, center.lng);
-                district = locationDetails.district;
-                village = locationDetails.village;
-            }
-
             const payload = {
-                name: fieldName,
+                name: formValues.name,
                 type,
                 geometry,
                 areaHectares: (area / 10000).toFixed(2),
                 areaAcres: (area / 4046.86).toFixed(2),
-                district,
-                village
+                district: formValues.district || 'NA',
+                village: formValues.village || 'NA',
+                cropType: formValues.cropType,
+                cropName: formValues.cropName
             };
 
             let backendId = null;
@@ -410,8 +474,8 @@ function CreateField() {
                 icon: 'success',
                 title: backendSaved ? 'Field Saved!' : 'Field Saved Locally',
                 text: backendSaved
-                    ? `"${fieldName}" has been saved successfully.`
-                    : `"${fieldName}" has been saved to your browser (Backend unavailable).`,
+                    ? `"${formValues.name}" has been saved successfully.`
+                    : `"${formValues.name}" has been saved to your browser (Backend unavailable).`,
                 timer: 2000,
                 confirmButtonColor: '#2f7a2f'
             });
