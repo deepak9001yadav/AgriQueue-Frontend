@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 import Swal from 'sweetalert2';
-import { saveField, searchLocation as apiSearchLocation } from '../utils/api';
+import { saveField, searchLocation as apiSearchLocation, getLocationDetails } from '../utils/api';
 import { kml } from '@mapbox/togeojson';
 import './CreateField.css';
 
@@ -325,20 +325,42 @@ function CreateField() {
             }
         });
 
-        if (fieldName) {
+            if (fieldName) {
             const layer = currentLayerRef.current;
             const type = getLayerType(layer);
             let geometry;
             let area = 0;
+            let center = null;
 
             if (type === 'circle') {
-                const center = layer.getLatLng();
+                const centerPt = layer.getLatLng();
                 const radius = layer.getRadius();
-                geometry = { type: 'Circle', center: [center.lat, center.lng], radius };
+                geometry = { type: 'Circle', center: [centerPt.lat, centerPt.lng], radius };
                 area = Math.PI * radius * radius;
+                center = centerPt;
             } else {
                 geometry = layer.toGeoJSON().geometry;
                 area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                center = layer.getBounds().getCenter();
+            }
+
+            // Show loading state while fetching location details
+            Swal.fire({
+                title: 'Saving Field...',
+                text: 'Fetching location details...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Fetch district and village based on center
+            let district = 'NA';
+            let village = 'NA';
+            if (center) {
+                const locationDetails = await getLocationDetails(center.lat, center.lng);
+                district = locationDetails.district;
+                village = locationDetails.village;
             }
 
             const payload = {
@@ -346,7 +368,9 @@ function CreateField() {
                 type,
                 geometry,
                 areaHectares: (area / 10000).toFixed(2),
-                areaAcres: (area / 4046.86).toFixed(2)
+                areaAcres: (area / 4046.86).toFixed(2),
+                district,
+                village
             };
 
             let backendId = null;

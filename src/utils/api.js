@@ -305,6 +305,38 @@ export async function reverseGeocode(lat, lng) {
     }
 }
 
+// Get detailed location (district, village)
+export async function getLocationDetails(lat, lng) {
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        );
+
+        if (!response.ok) {
+            return { district: 'NA', village: 'NA' };
+        }
+
+        const data = await response.json();
+        const address = data.address || {};
+        
+        // Prioritize granular locations: neighbourhood > suburb > hamlet > village > town > city
+        const village = address.neighbourhood || address.suburb || address.hamlet || address.village || address.town || address.city || 'NA';
+        
+        // Extract district or county
+        let district = address.state_district || address.county || address.city_district || 'NA';
+
+        // Avoid redundancy (e.g. "Lalitpur, Lalitpur" -> "Lalitpur, Uttar Pradesh")
+        if (village !== 'NA' && district !== 'NA' && village.toLowerCase() === district.toLowerCase()) {
+            district = address.state || 'NA';
+        }
+
+        return { district, village };
+    } catch (error) {
+        console.error('getLocationDetails error:', error);
+        return { district: 'NA', village: 'NA' };
+    }
+}
+
 // ===================================================================
 // FIELD MANAGEMENT APIs
 // ===================================================================
@@ -536,6 +568,7 @@ export default {
     // Location
     searchLocation,
     reverseGeocode,
+    getLocationDetails,
 
     // Expenditures
     addExpenditure,

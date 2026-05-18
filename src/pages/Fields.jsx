@@ -340,6 +340,10 @@ function Fields() {
                                 </div>
                                 <div className="field-card-body">
                                     <h3 className="field-name">{field.name}</h3>
+                                    <div className="field-location" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fas fa-map-marker-alt" style={{ color: 'var(--primary-green)' }}></i>
+                                        <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
+                                    </div>
                                     <div className="field-stats">
                                         <div className="field-stat">
                                             <span className="stat-value">{field.areaHectares}</span>
