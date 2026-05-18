@@ -309,7 +309,7 @@ export async function reverseGeocode(lat, lng) {
 export async function getLocationDetails(lat, lng) {
     try {
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=en`
         );
 
         if (!response.ok) {
@@ -319,11 +319,13 @@ export async function getLocationDetails(lat, lng) {
         const data = await response.json();
         const address = data.address || {};
         
-        // Prioritize granular locations: neighbourhood > suburb > hamlet > village > town > city
-        const village = address.neighbourhood || address.suburb || address.hamlet || address.village || address.town || address.city || 'NA';
+        // Prioritize rural and local tags commonly used in OpenStreetMap for India
+        const village = address.isolated_dwelling || address.hamlet || address.village || 
+                        address.neighbourhood || address.suburb || address.residential || 
+                        address.locality || address.town || address.city || address.municipality || 'NA';
         
         // Extract district or county
-        let district = address.state_district || address.county || address.city_district || 'NA';
+        let district = address.state_district || address.county || address.city_district || address.region || 'NA';
 
         // Avoid redundancy (e.g. "Lalitpur, Lalitpur" -> "Lalitpur, Uttar Pradesh")
         if (village !== 'NA' && district !== 'NA' && village.toLowerCase() === district.toLowerCase()) {
