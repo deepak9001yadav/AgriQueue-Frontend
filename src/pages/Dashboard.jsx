@@ -871,7 +871,12 @@ function Dashboard() {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>Crop Health Trend</span>
                                             <span style={{ fontSize: 13, fontWeight: 700, color: '#9c27b0' }}>
-                                                {(cropHealthData.data.reduce((a, b) => a + (b.ndvi || 0), 0) / cropHealthData.data.length).toFixed(3)}
+                                                {(() => {
+                                                    const validNdviPoints = cropHealthData.data.filter(d => d.ndvi !== null && d.ndvi !== undefined);
+                                                    return validNdviPoints.length > 0 
+                                                        ? (validNdviPoints.reduce((sum, d) => sum + d.ndvi, 0) / validNdviPoints.length).toFixed(3)
+                                                        : '—';
+                                                })()}
                                             </span>
                                         </div>
                                         <div style={{ height: 100 }}>
@@ -1050,46 +1055,46 @@ function Dashboard() {
 
             {/* Irrigation Modal Popup */}
             {irrigationModalOpen && (
-                <div className="modal-overlay" onClick={() => setIrrigationModalOpen(false)}>
-                    <div className="modal-content modal-large" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="db-modal-overlay" onClick={() => setIrrigationModalOpen(false)}>
+                    <div className="db-modal-content db-modal-large" onClick={e => e.stopPropagation()}>
+                        <div className="db-modal-header">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
                                 <h2>Irrigation Calendar</h2>
                             </div>
-                            <button className="modal-close-btn" onClick={() => setIrrigationModalOpen(false)}>
+                            <button className="db-modal-close-btn" onClick={() => setIrrigationModalOpen(false)}>
                                 <i className="fas fa-times"></i>
                             </button>
                         </div>
-                        <div className="modal-body">
+                        <div className="db-modal-body">
                             {irrigationData?.calendar?.length > 0 ? (
                                 <div>
                                     {/* Summary Stats */}
-                                    <div className="modal-stats-grid">
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                    <div className="db-modal-stats-grid">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-calendar-day"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">{irrigationData.summary?.irrigation_events || 0}</div>
-                                                <div className="modal-stat-label">Total Events</div>
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">{irrigationData.summary?.irrigation_events || 0}</div>
+                                                <div className="db-modal-stat-label">Total Events</div>
                                             </div>
                                         </div>
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-tint"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">{irrigationData.summary?.total_water_mm?.toFixed(1) || 0} mm</div>
-                                                <div className="modal-stat-label">Total Water</div>
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">{irrigationData.summary?.total_water_mm?.toFixed(1) || 0} mm</div>
+                                                <div className="db-modal-stat-label">Total Water</div>
                                             </div>
                                         </div>
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-percentage"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">
                                                     {(() => {
                                                         const saved = irrigationData.summary?.water_saved_mm || 0;
                                                         const total = irrigationData.summary?.total_water_mm || 0;
@@ -1097,24 +1102,24 @@ function Dashboard() {
                                                         return original > 0 ? ((saved / original) * 100).toFixed(1) : 0;
                                                     })()}%
                                                 </div>
-                                                <div className="modal-stat-label">Water Saved</div>
+                                                <div className="db-modal-stat-label">Water Saved</div>
                                             </div>
                                         </div>
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-bell"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">{irrigationData.summary?.urgent_count || 0}</div>
-                                                <div className="modal-stat-label">Total Urgent</div>
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">{irrigationData.summary?.urgent_count || 0}</div>
+                                                <div className="db-modal-stat-label">Total Urgent</div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Events Table */}
                                     <h3 style={{ marginTop: 24, marginBottom: 16 }}>Irrigation Events</h3>
-                                    <div className="modal-table-container">
-                                        <table className="modal-table">
+                                    <div className="db-modal-table-container">
+                                        <table className="db-modal-table">
                                             <thead>
                                                 <tr>
                                                     <th>Date</th>
@@ -1164,70 +1169,75 @@ function Dashboard() {
 
             {/* Crop Health Modal Popup */}
             {cropHealthModalOpen && (
-                <div className="modal-overlay" onClick={() => setCropHealthModalOpen(false)}>
-                    <div className="modal-content modal-large" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="db-modal-overlay" onClick={() => setCropHealthModalOpen(false)}>
+                    <div className="db-modal-content db-modal-large" onClick={e => e.stopPropagation()}>
+                        <div className="db-modal-header">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
                                 <h2>Crop Health Analysis</h2>
                             </div>
-                            <button className="modal-close-btn" onClick={() => setCropHealthModalOpen(false)}>
+                            <button className="db-modal-close-btn" onClick={() => setCropHealthModalOpen(false)}>
                                 <i className="fas fa-times"></i>
                             </button>
                         </div>
-                        <div className="modal-body">
+                        <div className="db-modal-body">
                             {cropHealthData?.data?.length > 0 ? (
                                 <div>
                                     {/* Summary Stats */}
-                                    <div className="modal-stats-grid">
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                    <div className="db-modal-stats-grid">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-leaf"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">
-                                                    {(cropHealthData.data.reduce((a, b) => a + (b.ndvi || 0), 0) / cropHealthData.data.length).toFixed(3)}
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">
+                                                    {(() => {
+                                                        const validNdviPoints = cropHealthData.data.filter(d => d.ndvi !== null && d.ndvi !== undefined);
+                                                        return validNdviPoints.length > 0 
+                                                            ? (validNdviPoints.reduce((sum, d) => sum + d.ndvi, 0) / validNdviPoints.length).toFixed(3)
+                                                            : '—';
+                                                    })()}
                                                 </div>
-                                                <div className="modal-stat-label">Avg Crop Health</div>
+                                                <div className="db-modal-stat-label">Avg Crop Health</div>
                                             </div>
                                         </div>
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-chart-bar"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">{cropHealthData.data.length}</div>
-                                                <div className="modal-stat-label">Data Points</div>
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">{cropHealthData.data.length}</div>
+                                                <div className="db-modal-stat-label">Data Points</div>
                                             </div>
                                         </div>
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-calendar"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">
                                                     {new Date(cropHealthData.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                 </div>
-                                                <div className="modal-stat-label">Start Date</div>
+                                                <div className="db-modal-stat-label">Start Date</div>
                                             </div>
                                         </div>
-                                        <div className="modal-stat-card">
-                                            <div className="modal-stat-icon">
+                                        <div className="db-modal-stat-card">
+                                            <div className="db-modal-stat-icon">
                                                 <i className="fas fa-calendar-check"></i>
                                             </div>
-                                            <div className="modal-stat-info">
-                                                <div className="modal-stat-value">
+                                            <div className="db-modal-stat-info">
+                                                <div className="db-modal-stat-value">
                                                     {new Date(cropHealthData.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                 </div>
-                                                <div className="modal-stat-label">End Date</div>
+                                                <div className="db-modal-stat-label">End Date</div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Data Table - NDVI Only */}
                                     <h3 style={{ marginTop: 24, marginBottom: 16 }}>Crop Health Values</h3>
-                                    <div className="modal-table-container">
-                                        <table className="modal-table">
+                                    <div className="db-modal-table-container">
+                                        <table className="db-modal-table">
                                             <thead>
                                                 <tr>
                                                     <th>Date</th>
@@ -1240,7 +1250,10 @@ function Dashboard() {
                                                     const ndvi = item.ndvi;
                                                     let status = 'Poor';
                                                     let statusColor = '#d32f2f';
-                                                    if (ndvi > 0.6) {
+                                                    if (ndvi === null || ndvi === undefined) {
+                                                        status = 'Cloud Cover';
+                                                        statusColor = '#9e9e9e';
+                                                    } else if (ndvi > 0.6) {
                                                         status = 'Excellent';
                                                         statusColor = 'var(--primary-green)';
                                                     } else if (ndvi > 0.4) {
