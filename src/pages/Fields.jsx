@@ -15,6 +15,13 @@ function Fields() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [dbAreaSummary, setDbAreaSummary] = useState(null);
 
+    // Search, Filter, Sort and View Mode States
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('All');
+    const [selectedVillage, setSelectedVillage] = useState('All');
+    const [sortBy, setSortBy] = useState('newest');
+    const [viewMode, setViewMode] = useState('grid');
+
     // Dark mode
     useEffect(() => {
         const savedMode = localStorage.getItem('darkMode') === 'true';
@@ -65,6 +72,49 @@ function Fields() {
         }
         fetchAreaSummary();
     }, [fields]);
+
+    // Dynamic Filter Categories
+    const uniqueDistricts = ['All', ...new Set(fields.map(f => f.district || 'NA').filter(Boolean))];
+    const uniqueVillages = ['All', ...new Set(
+        fields
+            .filter(f => selectedDistrict === 'All' || (f.district || 'NA') === selectedDistrict)
+            .map(f => f.village || 'NA')
+            .filter(Boolean)
+    )];
+
+    // Live filter and sort
+    const filteredAndSortedFields = fields
+        .filter(field => {
+            const nameMatch = field.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const villageMatch = (field.village || 'NA').toLowerCase().includes(searchQuery.toLowerCase());
+            const districtMatch = (field.district || 'NA').toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = nameMatch || villageMatch || districtMatch;
+
+            const matchesDistrict = selectedDistrict === 'All' || (field.district || 'NA') === selectedDistrict;
+            const matchesVillage = selectedVillage === 'All' || (field.village || 'NA') === selectedVillage;
+
+            return matchesSearch && matchesDistrict && matchesVillage;
+        })
+        .sort((a, b) => {
+            const getArea = (f) => {
+                if (f.areaAcres != null && f.areaAcres !== '') return parseFloat(f.areaAcres) || 0;
+                if (f.areaHectares != null && f.areaHectares !== '') return (parseFloat(f.areaHectares) || 0) * 2.47105;
+                return 0;
+            };
+
+            if (sortBy === 'newest') {
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+            } else if (sortBy === 'oldest') {
+                return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+            } else if (sortBy === 'area-desc') {
+                return getArea(b) - getArea(a);
+            } else if (sortBy === 'area-asc') {
+                return getArea(a) - getArea(b);
+            } else if (sortBy === 'name-asc') {
+                return a.name.localeCompare(b.name);
+            }
+            return 0;
+        });
 
     const handleLogout = () => {
         logout();
@@ -295,6 +345,83 @@ function Fields() {
                     </Link>
                 </div>
 
+                {/* Scalability Control Panel */}
+                {fields.length > 0 && (
+                    <div className="fields-controls">
+                        <div className="controls-left">
+                            <div className="search-box">
+                                <i className="fas fa-search search-icon"></i>
+                                <input
+                                    type="text"
+                                    placeholder="Search by name, village, or district..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="search-input"
+                                />
+                                {searchQuery && (
+                                    <button className="clear-search" onClick={() => setSearchQuery('')} title="Clear search">
+                                        <i className="fas fa-times"></i>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="filter-group">
+                                <select
+                                    value={selectedDistrict}
+                                    onChange={(e) => {
+                                        setSelectedDistrict(e.target.value);
+                                        setSelectedVillage('All'); // Reset village filter when district changes
+                                    }}
+                                    className="filter-select"
+                                >
+                                    <option value="All">All Districts</option>
+                                    {uniqueDistricts.filter(d => d !== 'All').map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedVillage}
+                                    onChange={(e) => setSelectedVillage(e.target.value)}
+                                    className="filter-select"
+                                >
+                                    <option value="All">All Villages</option>
+                                    {uniqueVillages.filter(v => v !== 'All').map(v => (
+                                        <option key={v} value={v}>{v}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="filter-select sort-select"
+                                >
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="area-desc">Largest Area</option>
+                                    <option value="area-asc">Smallest Area</option>
+                                    <option value="name-asc">Alphabetical (A-Z)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="controls-right">
+                            <div className="view-toggle">
+                                <button
+                                    className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                                    onClick={() => setViewMode('grid')}
+                                    title="Grid View"
+                                >
+                                    <i className="fas fa-th-large"></i>
+                                </button>
+                                <button
+                                    className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                                    onClick={() => setViewMode('list')}
+                                    title="List View"
+                                >
+                                    <i className="fas fa-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="loading-state">
                         <i className="fas fa-circle-notch fa-spin"></i>
@@ -311,57 +438,140 @@ function Fields() {
                             <i className="fas fa-plus"></i> Create Field
                         </Link>
                     </div>
-                ) : (
+                ) : filteredAndSortedFields.length === 0 ? (
+                    <div className="empty-state search-empty-state">
+                        <div className="empty-icon filter-empty-icon">
+                            <i className="fas fa-search-minus"></i>
+                        </div>
+                        <h2>No Matches Found</h2>
+                        <p>We couldn't find any fields matching your search queries or selected filters.</p>
+                        <button className="btn btn-primary" onClick={() => {
+                            setSearchQuery('');
+                            setSelectedDistrict('All');
+                            setSelectedVillage('All');
+                        }}>
+                            Clear Filters
+                        </button>
+                    </div>
+                ) : viewMode === 'grid' ? (
                     <div className="fields-grid">
-                        {fields.map((field, index) => (
-                            <div
-                                key={field.id}
-                                className="field-card"
-                                onClick={() => handleFieldClick(field)}
-                            >
-                                <div className="field-card-top">
-                                    <span className="field-badge">Field {index + 1}</span>
-                                    <div className="field-actions">
-                                        <button
-                                            className="field-edit-btn"
-                                            onClick={(e) => handleEditField(e, field)}
-                                            title="Edit Name"
-                                        >
-                                            <i className="fas fa-edit"></i>
-                                        </button>
-                                        <button
-                                            className="field-delete-btn"
-                                            onClick={(e) => handleDeleteField(e, field.id)}
-                                            title="Delete"
-                                        >
-                                            <i className="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="field-card-body">
-                                    <h3 className="field-name">{field.name}</h3>
-                                    <div className="field-location" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <i className="fas fa-map-marker-alt" style={{ color: 'var(--primary-green)' }}></i>
-                                        <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
-                                    </div>
-                                    <div className="field-stats">
-                                        <div className="field-stat">
-                                            <span className="stat-value">{field.areaHectares}</span>
-                                            <span className="stat-label">Hectares</span>
-                                        </div>
-                                        <div className="field-divider"></div>
-                                        <div className="field-stat">
-                                            <span className="stat-value">{field.areaAcres}</span>
-                                            <span className="stat-label">Acres</span>
+                        {filteredAndSortedFields.map((field, index) => {
+                            const originalIndex = fields.findIndex(f => f.id === field.id);
+                            return (
+                                <div
+                                    key={field.id}
+                                    className="field-card"
+                                    onClick={() => handleFieldClick(field)}
+                                >
+                                    <div className="field-card-top">
+                                        <span className="field-badge">Field {originalIndex !== -1 ? originalIndex + 1 : index + 1}</span>
+                                        <div className="field-actions">
+                                            <button
+                                                className="field-edit-btn"
+                                                onClick={(e) => handleEditField(e, field)}
+                                                title="Edit Name"
+                                            >
+                                                <i className="fas fa-edit"></i>
+                                            </button>
+                                            <button
+                                                className="field-delete-btn"
+                                                onClick={(e) => handleDeleteField(e, field.id)}
+                                                title="Delete"
+                                            >
+                                                <i className="fas fa-trash-alt"></i>
+                                            </button>
                                         </div>
                                     </div>
+                                    <div className="field-card-body">
+                                        <h3 className="field-name">{field.name}</h3>
+                                        <div className="field-location" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <i className="fas fa-map-marker-alt" style={{ color: 'var(--primary-green)' }}></i>
+                                            <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
+                                        </div>
+                                        <div className="field-stats">
+                                            <div className="field-stat">
+                                                <span className="stat-value">{field.areaHectares}</span>
+                                                <span className="stat-label">Hectares</span>
+                                            </div>
+                                            <div className="field-divider"></div>
+                                            <div className="field-stat">
+                                                <span className="stat-value">{field.areaAcres}</span>
+                                                <span className="stat-label">Acres</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="field-card-footer">
+                                        <span className="field-footer-text">View Analysis</span>
+                                        <i className="fas fa-arrow-right"></i>
+                                    </div>
                                 </div>
-                                <div className="field-card-footer">
-                                    <span className="field-footer-text">View Analysis</span>
-                                    <i className="fas fa-arrow-right"></i>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="fields-list-view">
+                        <table className="fields-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Field Name</th>
+                                    <th>Location (Village, District)</th>
+                                    <th>Area (Hectares)</th>
+                                    <th>Area (Acres)</th>
+                                    <th className="actions-header">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredAndSortedFields.map((field, index) => {
+                                    const originalIndex = fields.findIndex(f => f.id === field.id);
+                                    return (
+                                        <tr
+                                            key={field.id}
+                                            className="table-row"
+                                            onClick={() => handleFieldClick(field)}
+                                        >
+                                            <td className="row-badge-col">
+                                                <span className="row-badge">Field {originalIndex !== -1 ? originalIndex + 1 : index + 1}</span>
+                                            </td>
+                                            <td className="row-name-col">
+                                                <span className="row-name">{field.name}</span>
+                                            </td>
+                                            <td className="row-location-col">
+                                                <div className="row-location">
+                                                    <i className="fas fa-map-marker-alt marker-icon"></i>
+                                                    <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="row-stat-col">{field.areaHectares} ha</td>
+                                            <td className="row-stat-col">{field.areaAcres} ac</td>
+                                            <td className="row-actions-col" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    className="table-action-btn edit-btn"
+                                                    onClick={(e) => handleEditField(e, field)}
+                                                    title="Edit Name"
+                                                >
+                                                    <i className="fas fa-edit"></i>
+                                                </button>
+                                                <button
+                                                    className="table-action-btn delete-btn"
+                                                    onClick={(e) => handleDeleteField(e, field.id)}
+                                                    title="Delete Field"
+                                                >
+                                                    <i className="fas fa-trash-alt"></i>
+                                                </button>
+                                                <button
+                                                    className="table-action-btn go-btn"
+                                                    onClick={() => handleFieldClick(field)}
+                                                    title="View Analysis"
+                                                >
+                                                    <i className="fas fa-chevron-right"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
