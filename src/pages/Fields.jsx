@@ -22,6 +22,11 @@ function Fields() {
     const [sortBy, setSortBy] = useState('newest');
     const [viewMode, setViewMode] = useState('grid');
 
+    // Bulk Selection States
+    const [selectedFieldIds, setSelectedFieldIds] = useState([]);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkDeleteProgress, setBulkDeleteProgress] = useState({ current: 0, total: 0 });
+
     // Dark mode
     useEffect(() => {
         const savedMode = localStorage.getItem('darkMode') === 'true';
@@ -459,6 +464,90 @@ function Fields() {
         }
     };
 
+    // Selection helper functions
+    const handleSelectField = (fieldId) => {
+        setSelectedFieldIds(prev =>
+            prev.includes(fieldId)
+                ? prev.filter(id => id !== fieldId)
+                : [...prev, fieldId]
+        );
+    };
+
+    const allVisibleSelected = filteredAndSortedFields.length > 0 &&
+        filteredAndSortedFields.every(f => selectedFieldIds.includes(f.id));
+
+    const handleSelectAllToggle = () => {
+        if (allVisibleSelected) {
+            // Deselect all visible fields
+            const visibleIds = filteredAndSortedFields.map(f => f.id);
+            setSelectedFieldIds(prev => prev.filter(id => !visibleIds.includes(id)));
+        } else {
+            // Select all visible fields
+            const visibleIds = filteredAndSortedFields.map(f => f.id);
+            setSelectedFieldIds(prev => {
+                const unique = new Set([...prev, ...visibleIds]);
+                return Array.from(unique);
+            });
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const count = selectedFieldIds.length;
+        if (count === 0) return;
+
+        const result = await Swal.fire({
+            title: `Delete ${count} Field${count > 1 ? 's' : ''}? / ${count} खेत हटाएं?`,
+            text: `Are you sure you want to delete these ${count} selected fields? This cannot be undone! / क्या आप वाकई इन ${count} चयनित खेतों को हटाना चाहते हैं? यह वापस नहीं लिया जा सकता!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete all / हाँ, सभी को हटाएं',
+            cancelButtonText: 'Cancel / रद्द करें'
+        });
+
+        if (result.isConfirmed) {
+            setBulkDeleting(true);
+            setBulkDeleteProgress({ current: 0, total: count });
+
+            let successCount = 0;
+            let failCount = 0;
+
+            const idsToDelete = [...selectedFieldIds];
+
+            for (let i = 0; i < idsToDelete.length; i++) {
+                const id = idsToDelete[i];
+                setBulkDeleteProgress({ current: i + 1, total: count });
+
+                try {
+                    await deleteField(id);
+                    clearFieldData(id);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error deleting field ${id}:`, error);
+                    clearFieldData(id);
+                    failCount++;
+                }
+            }
+
+            // Update main fields state
+            setFields(prevFields => {
+                const updatedFields = prevFields.filter(f => !idsToDelete.includes(f.id));
+                localStorage.setItem('fields', JSON.stringify(updatedFields));
+                return updatedFields;
+            });
+
+            setSelectedFieldIds([]);
+            setBulkDeleting(false);
+
+            if (failCount === 0) {
+                toast.success(`Successfully deleted all ${successCount} selected fields!`);
+            } else {
+                toast.success(`Deleted ${successCount} fields. ${failCount} failed.`);
+            }
+        }
+    };
+
     // Helper function to clear all field-related data from localStorage
     const clearFieldData = (fieldId) => {
         // Clear crop health data if it matches this field
@@ -640,7 +729,30 @@ function Fields() {
                                 </select>
                             </div>
                         </div>
-                        <div className="controls-right">
+                        <div className="controls-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {filteredAndSortedFields.length > 0 && (
+                                <button
+                                    className={`btn-select-all ${allVisibleSelected ? 'active' : ''}`}
+                                    onClick={handleSelectAllToggle}
+                                    style={{
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '8px 14px',
+                                        borderRadius: '10px',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-light)',
+                                        color: 'var(--text-secondary)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <i className={allVisibleSelected ? "fas fa-check-square" : "far fa-square"} style={{ color: allVisibleSelected ? 'var(--krishi-green)' : 'inherit' }}></i>
+                                    <span>{allVisibleSelected ? "Deselect All" : "Select All"}</span>
+                                </button>
+                            )}
                             <div className="view-toggle">
                                 <button
                                     className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -703,6 +815,16 @@ function Fields() {
                                     onClick={() => handleFieldClick(field)}
                                 >
                                     <div className="field-card-top">
+                                        <div className="field-card-select" onClick={(e) => e.stopPropagation()} style={{ marginRight: '6px' }}>
+                                            <label className="checkbox-container">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedFieldIds.includes(field.id)}
+                                                    onChange={() => handleSelectField(field.id)}
+                                                />
+                                                <span className="checkmark"></span>
+                                            </label>
+                                        </div>
                                         <span className="field-badge">Field {originalIndex !== -1 ? originalIndex + 1 : index + 1}</span>
                                         <div className="field-actions">
                                             <button
@@ -770,6 +892,16 @@ function Fields() {
                         <table className="fields-table">
                             <thead>
                                 <tr>
+                                    <th className="select-header-col" style={{ width: '40px', paddingLeft: '24px', paddingRight: '0' }}>
+                                        <label className="checkbox-container">
+                                            <input
+                                                type="checkbox"
+                                                checked={allVisibleSelected}
+                                                onChange={handleSelectAllToggle}
+                                            />
+                                            <span className="checkmark"></span>
+                                        </label>
+                                    </th>
                                     <th>#</th>
                                     <th>Field Name</th>
                                     <th>Location (Village, District)</th>
@@ -789,6 +921,16 @@ function Fields() {
                                             className="table-row"
                                             onClick={() => handleFieldClick(field)}
                                         >
+                                            <td className="row-select-col" onClick={(e) => e.stopPropagation()} style={{ width: '40px', paddingLeft: '24px', paddingRight: '0' }}>
+                                                <label className="checkbox-container">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedFieldIds.includes(field.id)}
+                                                        onChange={() => handleSelectField(field.id)}
+                                                    />
+                                                    <span className="checkmark"></span>
+                                                </label>
+                                            </td>
                                             <td className="row-badge-col">
                                                 <span className="row-badge">Field {originalIndex !== -1 ? originalIndex + 1 : index + 1}</span>
                                             </td>
@@ -855,6 +997,48 @@ function Fields() {
                     </div>
                 )}
             </div>
+
+            {/* Bulk Actions Bar */}
+            {selectedFieldIds.length > 0 && (
+                <div className="bulk-actions-bar">
+                    <div className="bulk-actions-content">
+                        <span className="selected-count">
+                            <i className="fas fa-check-square"></i> {selectedFieldIds.length} Field{selectedFieldIds.length > 1 ? 's' : ''} Selected
+                        </span>
+                        <div className="bulk-actions-btns">
+                            <button className="btn-bulk-delete" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                                <i className="fas fa-trash-alt"></i> Delete Selected
+                            </button>
+                            <button className="btn-bulk-cancel" onClick={() => setSelectedFieldIds([])} disabled={bulkDeleting}>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Deletion Progress Indicator */}
+            {bulkDeleting && (
+                <div className="smart-loader-overlay">
+                    <div className="smart-loader-content" style={{ width: '320px' }}>
+                        <div className="loader-header">
+                            <span className="satellite-spinner-small">
+                                <i className="fas fa-circle-notch fa-spin"></i>
+                            </span>
+                            <h4 className="loader-title">Deleting Fields...</h4>
+                        </div>
+                        <div className="progress-container">
+                            <div
+                                className="progress-bar"
+                                style={{ width: `${(bulkDeleteProgress.current / bulkDeleteProgress.total) * 100}%` }}
+                            ></div>
+                        </div>
+                        <div className="loader-status">
+                            Deleting {bulkDeleteProgress.current} of {bulkDeleteProgress.total} fields...
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
