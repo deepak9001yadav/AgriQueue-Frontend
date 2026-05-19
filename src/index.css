@@ -3316,4 +3316,70 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
   margin: 0 !important;
 }
 
+/* Custom Pulsing Leaflet Marker Icon */
+.custom-gps-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.marker-pin-wrapper {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-pulse {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 200, 83, 0.4);
+  animation: markerPulse 1.8s infinite ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.marker-pin {
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 50% 50% 0;
+  background: #00c853;
+  position: absolute;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.4);
+  border: 2px solid #ffffff;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.marker-pin i {
+  transform: rotate(45deg);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.marker-pin:hover {
+  transform: rotate(-45deg) scale(1.1);
+  background: #00b0ff;
+  box-shadow: 0 6px 16px rgba(0, 176, 255, 0.5);
+  border-color: #ffffff;
+}
+
+@keyframes markerPulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
 /* ───────────────────────────────────────────────────────────────────────────── */

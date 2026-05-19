@@ -376,7 +376,7 @@ function CreateField() {
                         </div>
                         <div style="flex: 1;">
                             <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
-                                Village <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ गाँव</span>
+                                Village * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ गाँव</span>
                             </label>
                             <input id="swal-village" class="swal2-input" value="${fetchedVillage}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
                         </div>
@@ -535,6 +535,10 @@ function CreateField() {
                     Swal.showValidationMessage('Please enter a Field Name / कृपया खेत का नाम दर्ज करें');
                     return false;
                 }
+                if (!village) {
+                    Swal.showValidationMessage('Please enter a Village / कृपया गाँव का नाम दर्ज करें');
+                    return false;
+                }
                 if (!cropType) {
                     Swal.showValidationMessage('Please select a Crop Type / कृपया फसल का प्रकार चुनें');
                     return false;
@@ -582,7 +586,9 @@ function CreateField() {
                 cropType: formValues.cropType,
                 cropName: formValues.cropName,
                 sowingDate: formValues.sowingDate,
-                harvestingDate: formValues.harvestingDate
+                harvestingDate: formValues.harvestingDate,
+                latitude: center ? center.lat : null,
+                longitude: center ? center.lng : null
             };
 
             let backendId = null;
@@ -694,11 +700,19 @@ function CreateField() {
         };
     }, [isDraggingToolbar]);
 
-    const customIcon = L.icon({
-        iconUrl: '/static/marker.png', // Apni nayi image ka path yahan dalein
-        iconSize: [38, 38],              // Image ki size (width, height)
-        iconAnchor: [19, 38],            // Wo point jahan marker map ko touch karega (bottom center)
-        popupAnchor: [0, -38]            // Popup image ke kitna upar khulega
+    const customIcon = L.divIcon({
+        className: 'custom-gps-marker',
+        html: `
+            <div class="marker-pin-wrapper">
+                <div class="marker-pulse"></div>
+                <div class="marker-pin">
+                    <i class="fas fa-leaf"></i>
+                </div>
+            </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
     });
 
 

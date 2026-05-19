@@ -155,7 +155,7 @@ function Fields() {
                         </div>
                         <div style="flex: 1;">
                             <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
-                                Village <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ गाँव</span>
+                                Village * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ गाँव</span>
                             </label>
                             <input id="swal-village" class="swal2-input" value="${initialVillage}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
                         </div>
@@ -330,6 +330,10 @@ function Fields() {
 
                 if (!name) {
                     Swal.showValidationMessage('Please enter a Field Name / कृपया खेत का नाम दर्ज करें');
+                    return false;
+                }
+                if (!village) {
+                    Swal.showValidationMessage('Please enter a Village / कृपया गाँव का नाम दर्ज करें');
                     return false;
                 }
                 if (!cropType) {
@@ -719,10 +723,16 @@ function Fields() {
                                     </div>
                                     <div className="field-card-body">
                                         <h3 className="field-name">{field.name}</h3>
-                                        <div className="field-location" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <div className="field-location" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <i className="fas fa-map-marker-alt" style={{ color: 'var(--primary-green)' }}></i>
                                             <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
                                         </div>
+                                        {field.latitude != null && field.longitude != null && (
+                                            <div className="field-coords" style={{ fontSize: '0.8rem', color: '#888', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <i className="fas fa-compass" style={{ color: '#aaa' }}></i>
+                                                <span>Lat: {parseFloat(field.latitude).toFixed(5)}, Lng: {parseFloat(field.longitude).toFixed(5)}</span>
+                                            </div>
+                                        )}
                                         {(field.cropType || field.cropName) && (
                                             <div className="field-crop-info" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <i className="fas fa-seedling" style={{ color: 'var(--primary-green)' }}></i>
@@ -790,6 +800,11 @@ function Fields() {
                                                     <i className="fas fa-map-marker-alt marker-icon"></i>
                                                     <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
                                                 </div>
+                                                {field.latitude != null && field.longitude != null && (
+                                                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px', paddingLeft: '18px' }}>
+                                                        Lat: {parseFloat(field.latitude).toFixed(5)}, Lng: {parseFloat(field.longitude).toFixed(5)}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="row-crop-col">
                                                 {field.cropName || field.cropType ? (

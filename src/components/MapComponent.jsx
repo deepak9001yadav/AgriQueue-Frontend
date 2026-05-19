@@ -232,11 +232,19 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             map.removeLayer(currentSearchMarkerRef.current);
         }
 
-        const customIcon = L.icon({
-            iconUrl: '/static/marker.png', // Apni nayi image ka path yahan dalein
-            iconSize: [38, 38],              // Image ki size (width, height)
-            iconAnchor: [19, 38],            // Wo point jahan marker map ko touch karega (bottom center)
-            popupAnchor: [0, -38]            // Popup image ke kitna upar khulega
+        const customIcon = L.divIcon({
+            className: 'custom-gps-marker',
+            html: `
+                <div class="marker-pin-wrapper">
+                    <div class="marker-pulse"></div>
+                    <div class="marker-pin">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                </div>
+            `,
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -40]
         });
 
         // Add new marker
