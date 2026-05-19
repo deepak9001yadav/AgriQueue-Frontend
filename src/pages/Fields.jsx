@@ -489,9 +489,15 @@ function Fields() {
                                             <span>{field.village || 'NA'}, {field.district || 'NA'}</span>
                                         </div>
                                         {(field.cropType || field.cropName) && (
-                                            <div className="field-crop-info" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div className="field-crop-info" style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <i className="fas fa-seedling" style={{ color: 'var(--primary-green)' }}></i>
                                                 <span>{field.cropName || field.cropType} {field.cropName && field.cropType ? `(${field.cropType})` : ''}</span>
+                                            </div>
+                                        )}
+                                        {field.sowingDate && (
+                                            <div className="field-sowing-info" style={{ fontSize: '0.8rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <i className="far fa-calendar-alt" style={{ color: 'var(--primary-green)' }}></i>
+                                                <span>Sowed: {field.sowingDate} {field.harvestingDate ? `| Harvest: ${field.harvestingDate}` : ''}</span>
                                             </div>
                                         )}
                                         <div className="field-stats">
@@ -523,6 +529,7 @@ function Fields() {
                                     <th>Field Name</th>
                                     <th>Location (Village, District)</th>
                                     <th>Crop</th>
+                                    <th>Dates (Sowing / Harvesting)</th>
                                     <th>Area (Hectares)</th>
                                     <th>Area (Acres)</th>
                                     <th className="actions-header">Actions</th>
@@ -556,6 +563,14 @@ function Fields() {
                                                         <span>{field.cropName || field.cropType}</span>
                                                     </div>
                                                 ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>Not specified / निर्दिष्ट नहीं</span>}
+                                            </td>
+                                            <td className="row-dates-col">
+                                                {field.sowingDate ? (
+                                                    <div style={{ fontSize: '0.85rem', color: '#555' }}>
+                                                        <div><strong style={{color: '#888', fontWeight: 500}}>S:</strong> {field.sowingDate}</div>
+                                                        {field.harvestingDate && <div><strong style={{color: '#888', fontWeight: 500}}>H:</strong> {field.harvestingDate}</div>}
+                                                    </div>
+                                                ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>N/A</span>}
                                             </td>
                                             <td className="row-stat-col">{field.areaHectares} ha</td>
                                             <td className="row-stat-col">{field.areaAcres} ac</td>
