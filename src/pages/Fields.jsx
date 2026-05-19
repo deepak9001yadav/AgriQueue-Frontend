@@ -257,7 +257,7 @@ function Fields() {
                 const updateCropNames = () => {
                     const selectedType = cropTypeSelect.value;
                     cropNameSelect.innerHTML = '<option value="">Select / चुनें</option>';
-                    
+
                     if (!selectedType) {
                         cropNameSelect.disabled = true;
                         customCropContainer.style.display = 'none';
@@ -305,7 +305,7 @@ function Fields() {
                 if (field.cropType) {
                     cropTypeSelect.value = field.cropType;
                     updateCropNames();
-                    
+
                     if (field.cropName) {
                         const isPredefined = cropOptions[field.cropType]?.some(c => c.value === field.cropName);
                         if (isPredefined) {
@@ -327,7 +327,7 @@ function Fields() {
                 const customCropName = document.getElementById('swal-custom-crop-name').value;
                 const sowingDate = document.getElementById('swal-sowing-date').value;
                 const harvestingDate = document.getElementById('swal-harvesting-date').value;
-                
+
                 if (!name) {
                     Swal.showValidationMessage('Please enter a Field Name / कृपया खेत का नाम दर्ज करें');
                     return false;
@@ -374,8 +374,8 @@ function Fields() {
 
                 // Step 2: Local State Update
                 setFields(prevFields =>
-                    prevFields.map(f => f.id === field.id ? { 
-                        ...f, 
+                    prevFields.map(f => f.id === field.id ? {
+                        ...f,
                         name: formValues.name,
                         district: formValues.district || 'NA',
                         village: formValues.village || 'NA',
@@ -388,8 +388,8 @@ function Fields() {
 
                 // Step 3: Update localStorage Fallback
                 const storedFields = JSON.parse(localStorage.getItem('fields') || '[]');
-                const updatedStoredFields = storedFields.map(f => f.id === field.id ? { 
-                    ...f, 
+                const updatedStoredFields = storedFields.map(f => f.id === field.id ? {
+                    ...f,
                     name: formValues.name,
                     district: formValues.district || 'NA',
                     village: formValues.village || 'NA',
@@ -416,13 +416,19 @@ function Fields() {
             e.nativeEvent.stopImmediatePropagation();
         }
 
-        const isConfirmed = window.confirm('Are you sure you want to delete this field? This cannot be undone!');
+        const result = await Swal.fire({
+            title: 'Delete Field? / खेत हटाएं?',
+            text: 'Are you sure you want to delete this field? This cannot be undone! / क्या आप वाकई इस खेत को हटाना चाहते हैं? यह वापस नहीं लिया जा सकता!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete / हाँ, हटाएं',
+            cancelButtonText: 'Cancel / रद्द करें'
+        });
 
-        if (isConfirmed) {
-            // Step 1: Immediately perform local deletion (optimistic or guaranteed local removal)
-            // We do this BEFORE the fetch request so that local state is updated immediately
-            // upon confirmation, satisfying the user's requirement to see the card disappear.
-
+        if (result.isConfirmed) {
+            // Step 1: Immediately perform local deletion
             const deleteLocally = () => {
                 clearFieldData(fieldId);
 
@@ -443,12 +449,9 @@ function Fields() {
                 console.log('✅ Field deleted successfully (Backend confirmed):', fieldId);
             } catch (error) {
                 // This handles both network errors and backend failures
-                // Delete locally and log the error
                 deleteLocally();
                 console.error('⚠️ Deletion error, but removed locally:', error);
             }
-
-            // IMPORTANT: No alert is shown for the error path, fulfilling the user's request.
         }
     };
 
@@ -799,8 +802,8 @@ function Fields() {
                                             <td className="row-dates-col">
                                                 {field.sowingDate ? (
                                                     <div style={{ fontSize: '0.85rem', color: '#555' }}>
-                                                        <div><strong style={{color: '#888', fontWeight: 500}}>S:</strong> {field.sowingDate}</div>
-                                                        {field.harvestingDate && <div><strong style={{color: '#888', fontWeight: 500}}>H:</strong> {field.harvestingDate}</div>}
+                                                        <div><strong style={{ color: '#888', fontWeight: 500 }}>S:</strong> {field.sowingDate}</div>
+                                                        {field.harvestingDate && <div><strong style={{ color: '#888', fontWeight: 500 }}>H:</strong> {field.harvestingDate}</div>}
                                                     </div>
                                                 ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>N/A</span>}
                                             </td>
