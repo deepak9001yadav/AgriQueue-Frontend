@@ -132,46 +132,278 @@ function Fields() {
             e.nativeEvent.stopImmediatePropagation();
         }
 
-        const { value: newName } = await Swal.fire({
-            title: 'Edit Field Name',
-            input: 'text',
-            inputLabel: 'Enter new field name',
-            inputValue: field.name,
+        const initialDistrict = (field.district && field.district !== 'NA') ? field.district : '';
+        const initialVillage = (field.village && field.village !== 'NA') ? field.village : '';
+
+        const { value: formValues } = await Swal.fire({
+            title: 'Edit Field Details <span style="font-size:18px; color:gray; font-weight:normal; display:block;">खेत का विवरण संपादित करें</span>',
+            html: `
+                <div style="display: flex; flex-direction: column; gap: 14px; text-align: left; padding-top: 5px;">
+                    <div>
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                            Field Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ खेत का नाम</span>
+                        </label>
+                        <input id="swal-name" class="swal2-input" value="${field.name || ''}" placeholder="e.g., North Field" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                District <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ ज़िला</span>
+                            </label>
+                            <input id="swal-district" class="swal2-input" value="${initialDistrict}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                Village <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ गाँव</span>
+                            </label>
+                            <input id="swal-village" class="swal2-input" value="${initialVillage}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                Crop Type * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का प्रकार</span>
+                            </label>
+                            <select id="swal-crop-type" class="swal2-select" style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
+                                <option value="">Select / चुनें</option>
+                                <option value="Cereal">Cereal / अनाज</option>
+                                <option value="Legume">Legume / दालें</option>
+                                <option value="Vegetable">Vegetable / सब्जियां</option>
+                                <option value="Fruit">Fruit / फल</option>
+                                <option value="Cash Crop">Cash Crop / नकदी फसल</option>
+                                <option value="Other">Other / अन्य</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                Crop Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का नाम</span>
+                            </label>
+                            <select id="swal-crop-name" class="swal2-select" disabled style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
+                                <option value="">Select Type First / पहले प्रकार चुनें</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="swal-custom-crop-container" style="display: none; margin-top: 4px;">
+                        <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                            Specify Crop Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का नाम दर्ज करें</span>
+                        </label>
+                        <input id="swal-custom-crop-name" class="swal2-input" placeholder="e.g., Mustard / सरसों" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                Sowing Date * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ बुवाई की तिथि</span>
+                            </label>
+                            <input type="date" id="swal-sowing-date" class="swal2-input" value="${field.sowingDate || ''}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                Harvesting Date <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ कटाई की तिथि</span>
+                            </label>
+                            <input type="date" id="swal-harvesting-date" class="swal2-input" value="${field.harvestingDate || ''}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                        </div>
+                    </div>
+                </div>
+            `,
+            focusConfirm: false,
             showCancelButton: true,
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'Field name cannot be empty!';
+            confirmButtonColor: '#2f7a2f',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Save / सहेजें',
+            cancelButtonText: 'Cancel / रद्द करें',
+            width: '450px',
+            didOpen: () => {
+                const cropTypeSelect = document.getElementById('swal-crop-type');
+                const cropNameSelect = document.getElementById('swal-crop-name');
+                const customCropContainer = document.getElementById('swal-custom-crop-container');
+                const customCropInput = document.getElementById('swal-custom-crop-name');
+
+                const cropOptions = {
+                    Cereal: [
+                        { value: 'Wheat', label: 'Wheat / गेहूँ' },
+                        { value: 'Paddy', label: 'Paddy (Rice) / धान (चावल)' },
+                        { value: 'Maize', label: 'Maize / मक्का' },
+                        { value: 'Barley', label: 'Barley / जौ' },
+                        { value: 'Bajra', label: 'Bajra / बाजरा' }
+                    ],
+                    Legume: [
+                        { value: 'Gram', label: 'Gram / चना' },
+                        { value: 'Peas', label: 'Peas / मटर' },
+                        { value: 'Lentils', label: 'Lentils (Masoor) / मसूर' },
+                        { value: 'PigeonPea', label: 'Pigeon Pea (Arhar) / अरहर' }
+                    ],
+                    Vegetable: [
+                        { value: 'Potato', label: 'Potato / आलू' },
+                        { value: 'Tomato', label: 'Tomato / टमाटर' },
+                        { value: 'Onion', label: 'Onion / प्याज' },
+                        { value: 'Cauliflower', label: 'Cauliflower / फूलगोभी' }
+                    ],
+                    Fruit: [
+                        { value: 'Mango', label: 'Mango / आम' },
+                        { value: 'Guava', label: 'Guava / अमरूद' },
+                        { value: 'Banana', label: 'Banana / केला' }
+                    ],
+                    'Cash Crop': [
+                        { value: 'Sugarcane', label: 'Sugarcane / गन्ना' },
+                        { value: 'Mustard', label: 'Mustard / सरसों' },
+                        { value: 'Cotton', label: 'Cotton / कपास' }
+                    ]
+                };
+
+                const updateCropNames = () => {
+                    const selectedType = cropTypeSelect.value;
+                    cropNameSelect.innerHTML = '<option value="">Select / चुनें</option>';
+                    
+                    if (!selectedType) {
+                        cropNameSelect.disabled = true;
+                        customCropContainer.style.display = 'none';
+                        return;
+                    }
+
+                    cropNameSelect.disabled = false;
+
+                    if (selectedType === 'Other') {
+                        cropNameSelect.innerHTML = '<option value="Other">Other / अन्य</option>';
+                        cropNameSelect.value = 'Other';
+                        customCropContainer.style.display = 'block';
+                        return;
+                    }
+
+                    const crops = cropOptions[selectedType] || [];
+                    crops.forEach(crop => {
+                        const opt = document.createElement('option');
+                        opt.value = crop.value;
+                        opt.textContent = crop.label;
+                        cropNameSelect.appendChild(opt);
+                    });
+
+                    // Add Other option
+                    const otherOpt = document.createElement('option');
+                    otherOpt.value = 'Other';
+                    otherOpt.textContent = 'Other / अन्य';
+                    cropNameSelect.appendChild(otherOpt);
+
+                    checkCustomCrop();
+                };
+
+                const checkCustomCrop = () => {
+                    if (cropNameSelect.value === 'Other') {
+                        customCropContainer.style.display = 'block';
+                    } else {
+                        customCropContainer.style.display = 'none';
+                    }
+                };
+
+                cropTypeSelect.addEventListener('change', updateCropNames);
+                cropNameSelect.addEventListener('change', checkCustomCrop);
+
+                // Pre-fill fields logic
+                if (field.cropType) {
+                    cropTypeSelect.value = field.cropType;
+                    updateCropNames();
+                    
+                    if (field.cropName) {
+                        const isPredefined = cropOptions[field.cropType]?.some(c => c.value === field.cropName);
+                        if (isPredefined) {
+                            cropNameSelect.value = field.cropName;
+                        } else {
+                            cropNameSelect.value = 'Other';
+                            customCropContainer.style.display = 'block';
+                            customCropInput.value = field.cropName;
+                        }
+                    }
                 }
             },
-            confirmButtonColor: 'var(--krishi-green)',
-            cancelButtonColor: '#d33',
-            customClass: {
-                popup: 'premium-swal-popup',
-                title: 'premium-swal-title',
-                confirmButton: 'premium-swal-button',
-                cancelButton: 'premium-swal-button-secondary'
+            preConfirm: () => {
+                const name = document.getElementById('swal-name').value;
+                const district = document.getElementById('swal-district').value;
+                const village = document.getElementById('swal-village').value;
+                const cropType = document.getElementById('swal-crop-type').value;
+                const cropNameVal = document.getElementById('swal-crop-name').value;
+                const customCropName = document.getElementById('swal-custom-crop-name').value;
+                const sowingDate = document.getElementById('swal-sowing-date').value;
+                const harvestingDate = document.getElementById('swal-harvesting-date').value;
+                
+                if (!name) {
+                    Swal.showValidationMessage('Please enter a Field Name / कृपया खेत का नाम दर्ज करें');
+                    return false;
+                }
+                if (!cropType) {
+                    Swal.showValidationMessage('Please select a Crop Type / कृपया फसल का प्रकार चुनें');
+                    return false;
+                }
+                if (!cropNameVal) {
+                    Swal.showValidationMessage('Please select a Crop Name / कृपया फसल का नाम चुनें');
+                    return false;
+                }
+                if (!sowingDate) {
+                    Swal.showValidationMessage('Please select a Sowing Date / कृपया बुवाई की तिथि चुनें');
+                    return false;
+                }
+
+                let cropName = cropNameVal;
+                if (cropNameVal === 'Other' || cropType === 'Other') {
+                    const finalCustomName = customCropName.trim();
+                    if (!finalCustomName) {
+                        Swal.showValidationMessage('Please specify the Crop Name / कृपया फसल का नाम दर्ज करें');
+                        return false;
+                    }
+                    cropName = finalCustomName;
+                }
+
+                return { name, district, village, cropType, cropName, sowingDate, harvestingDate };
             }
         });
 
-        if (newName && newName !== field.name) {
+        if (formValues) {
             try {
                 // Step 1: Backend Update
-                await updateField(field.id, { name: newName });
+                await updateField(field.id, {
+                    name: formValues.name,
+                    district: formValues.district || 'NA',
+                    village: formValues.village || 'NA',
+                    cropType: formValues.cropType,
+                    cropName: formValues.cropName,
+                    sowingDate: formValues.sowingDate,
+                    harvestingDate: formValues.harvestingDate
+                });
 
                 // Step 2: Local State Update
                 setFields(prevFields =>
-                    prevFields.map(f => f.id === field.id ? { ...f, name: newName } : f)
+                    prevFields.map(f => f.id === field.id ? { 
+                        ...f, 
+                        name: formValues.name,
+                        district: formValues.district || 'NA',
+                        village: formValues.village || 'NA',
+                        cropType: formValues.cropType,
+                        cropName: formValues.cropName,
+                        sowingDate: formValues.sowingDate,
+                        harvestingDate: formValues.harvestingDate
+                    } : f)
                 );
 
                 // Step 3: Update localStorage Fallback
                 const storedFields = JSON.parse(localStorage.getItem('fields') || '[]');
-                const updatedStoredFields = storedFields.map(f => f.id === field.id ? { ...f, name: newName } : f);
+                const updatedStoredFields = storedFields.map(f => f.id === field.id ? { 
+                    ...f, 
+                    name: formValues.name,
+                    district: formValues.district || 'NA',
+                    village: formValues.village || 'NA',
+                    cropType: formValues.cropType,
+                    cropName: formValues.cropName,
+                    sowingDate: formValues.sowingDate,
+                    harvestingDate: formValues.harvestingDate
+                } : f);
                 localStorage.setItem('fields', JSON.stringify(updatedStoredFields));
 
-                toast.success('Field name updated successfully!');
+                toast.success('Field details updated successfully!');
             } catch (error) {
-                console.error('⚠️ Error updating field name:', error);
-                toast.error('Failed to update field name.');
+                console.error('⚠️ Error updating field details:', error);
+                toast.error('Failed to update field details.');
             }
         }
     };

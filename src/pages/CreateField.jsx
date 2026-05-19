@@ -385,7 +385,7 @@ function CreateField() {
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
-                                Crop Type <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का प्रकार</span>
+                                Crop Type * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का प्रकार</span>
                             </label>
                             <select id="swal-crop-type" class="swal2-select" style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
                                 <option value="">Select / चुनें</option>
@@ -399,7 +399,7 @@ function CreateField() {
                         </div>
                         <div style="flex: 1;">
                             <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
-                                Crop Name <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का नाम</span>
+                                Crop Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का नाम</span>
                             </label>
                             <select id="swal-crop-name" class="swal2-select" disabled style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
                                 <option value="">Select Type First / पहले प्रकार चुनें</option>
@@ -533,6 +533,14 @@ function CreateField() {
                 
                 if (!name) {
                     Swal.showValidationMessage('Please enter a Field Name / कृपया खेत का नाम दर्ज करें');
+                    return false;
+                }
+                if (!cropType) {
+                    Swal.showValidationMessage('Please select a Crop Type / कृपया फसल का प्रकार चुनें');
+                    return false;
+                }
+                if (!cropNameVal) {
+                    Swal.showValidationMessage('Please select a Crop Name / कृपया फसल का नाम चुनें');
                     return false;
                 }
                 if (!sowingDate) {
