@@ -501,6 +501,33 @@ function AppContent() {
       return;
     }
 
+    // Special handling for 'iot' - no satellite map layer to load
+    if (layer === 'iot') {
+      if (!specificDateOverride) {
+        setSelectedImageryDate(null);
+        setCurrentLayerType(layer);
+        ensureRightPanelOpen(); // Show analytics panel for IoT too
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'IoT Sensor Station Connected',
+        text: 'The live ThingSpeak data stream has been loaded inside the analytics panel.',
+        confirmButtonText: 'View Dashboard',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'premium-swal-popup',
+          title: 'premium-swal-title',
+          confirmButton: 'premium-swal-button'
+        },
+        timer: 2500,
+        timerProgressBar: true
+      });
+
+      return;
+    }
+
+
     // START SMART LOADER
     setSmartLoader({
       visible: true,

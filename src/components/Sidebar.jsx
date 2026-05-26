@@ -83,7 +83,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
 
     const getChartParamForLayer = (layerId) => {
         if (layerId.startsWith('vra_')) return layerId.replace('vra_', '');
-        const map = { ndvi: 'ndvi', savi: 'savi', cwsi: 'cwsi', lst: 'lst', lai: 'lai', kc: 'kc', etc: 'etc', irrigation_need: 'irrigation_need', soilmoisture: 'soilmoisture_mm', rgb: null };
+        const map = { ndvi: 'ndvi', savi: 'savi', cwsi: 'cwsi', lst: 'lst', lai: 'lai', kc: 'kc', etc: 'etc', irrigation_need: 'irrigation_need', soilmoisture: 'soilmoisture_mm', weather: 'weather', iot: 'iot', rgb: null };
         return map[layerId] || null;
     };
 
@@ -126,6 +126,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         { id: 'irrigation_need', icon: 'fa-faucet-drip', label: 'Irrigation', color: '#2196f3', img: img_irrigation },
         { id: 'soilmoisture', icon: 'fa-droplet-slash', label: 'Soil Moisture', color: '#795548', img: img_soil },
         { id: 'weather', icon: 'fa-cloud-sun', label: 'Weather', color: '#607d8b', img: img_weather },
+        { id: 'iot', icon: 'fa-tower-broadcast', label: 'IoT Sensors', color: '#00bcd4', img: img_soil },
     ];
 
     const zonalLayers = [

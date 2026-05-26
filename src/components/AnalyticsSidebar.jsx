@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
 import ChartPanel from './ChartPanel';
+import IoTSensorPanel from './IoTSensorPanel';
 import { useApp } from '../context/AppContext';
 import { t } from '../utils/translations';
 import { fetchLandCoverAnalysis } from '../utils/api';
@@ -72,6 +73,43 @@ function AnalyticsSidebar() {
     const [timeScale, setTimeScale] = useState('monthly');
     const [selectedPeriod, setSelectedPeriod] = useState(0);
 
+    // Resizing state for right panel
+    const [panelWidth, setPanelWidth] = useState(400);
+    const isResizingRef = useRef(false);
+
+    const startResizing = (e) => {
+        e.preventDefault();
+        isResizingRef.current = true;
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isResizingRef.current) return;
+            const newWidth = window.innerWidth - e.clientX;
+            // Set bounds: Min 280px, Max 800px
+            if (newWidth >= 280 && newWidth <= 800) {
+                setPanelWidth(newWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            if (isResizingRef.current) {
+                isResizingRef.current = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
+
     // Sync chart param with selected layer
     useEffect(() => {
         if (!selectedLayer) return;
@@ -96,7 +134,8 @@ function AnalyticsSidebar() {
             'vra_irrigation_need': 'irrigation_need',
             'vra_soilmoisture': 'soilmoisture_mm',
             'vra_pca': 'pca',
-            'weather': 'weather'
+            'weather': 'weather',
+            'iot': 'iot'
         };
 
         const targetParam = layerToParam[selectedLayer];
@@ -118,6 +157,7 @@ function AnalyticsSidebar() {
         lai: 'opt_lai',
         weather: 'opt_w',
         pca: 'opt_pca',
+        iot: 'IoT Sensors',
     };
 
     // Calculate generic stats
@@ -209,6 +249,33 @@ function AnalyticsSidebar() {
         >
             <i className={`fa-solid fa-chevron-${isRightPanelOpen ? 'right' : 'left'}`}></i>
         </button>
+    );
+
+    const asideStyle = isRightPanelOpen ? {
+        width: `${panelWidth}px`,
+        minWidth: `${panelWidth}px`,
+        maxWidth: `${panelWidth}px`,
+        flex: `0 0 ${panelWidth}px`
+    } : {};
+
+    const resizerEl = isRightPanelOpen && (
+        <div
+            className="sidebar-resizer-handle"
+            onMouseDown={startResizing}
+            style={{
+                position: 'absolute',
+                left: '-4px',
+                top: 0,
+                width: '8px',
+                height: '100%',
+                cursor: 'ew-resize',
+                zIndex: 999,
+                background: 'transparent',
+                transition: 'background 0.2s',
+            }}
+            onMouseEnter={(e) => { e.target.style.background = 'rgba(0, 200, 83, 0.2)'; }}
+            onMouseLeave={(e) => { e.target.style.background = 'transparent'; }}
+        />
     );
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -605,11 +672,25 @@ function AnalyticsSidebar() {
         return null;
     }
 
+    // Case -1: IoT Tab - Show IoT Sensor Dashboard
+    if (activeChartParam === 'iot') {
+        return (
+            <aside className={asideCls} style={asideStyle}>
+                {toggleBtn}
+                {resizerEl}
+                <div className="analytics-sidebar-inner" style={{ height: '100%', overflowY: 'auto' }}>
+                    <IoTSensorPanel panelWidth={panelWidth} setPanelWidth={setPanelWidth} />
+                </div>
+            </aside>
+        );
+    }
+
     // Case 0: Weather Tab - Show Weather Dashboard
     if (activeChartParam === 'weather') {
         return (
-            <aside className={asideCls}>
+            <aside className={asideCls} style={asideStyle}>
                 {toggleBtn}
+                {resizerEl}
                 <div className="analytics-sidebar-inner">
                     <div className="weather-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'hidden' }}>
                         {/* Header */}
@@ -653,8 +734,9 @@ function AnalyticsSidebar() {
         // Context A: Layer Selection Context -> Show Full Dashboard
         if (showDashboard && selectedLayer === 'ndvi') {
             return (
-                <aside className={asideCls}>
+                <aside className={asideCls} style={asideStyle}>
                     {toggleBtn}
+                    {resizerEl}
                     <div className="analytics-sidebar-inner">
                         <div className="ndvi-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'hidden' }}>
                             {/* Header */}
@@ -849,8 +931,9 @@ function AnalyticsSidebar() {
         const reportCharts = getReportCharts();
         if (reportCharts) {
             return (
-                <aside className={asideCls}>
+                <aside className={asideCls} style={asideStyle}>
                     {toggleBtn}
+                    {resizerEl}
                     <div className="analytics-sidebar-inner">
                         {reportCharts}
                         {/* Chart Panel - Sidebar Mode */}
@@ -867,8 +950,9 @@ function AnalyticsSidebar() {
     // Only show Crop Health Statistics if NDVI layer is selected (Pre-computation/Map View)
     if (selectedLayer !== 'ndvi') {
         return (
-            <aside className={asideCls}>
+            <aside className={asideCls} style={asideStyle}>
                 {toggleBtn}
+                {resizerEl}
                 <div className="analytics-sidebar-inner">
                     <div className="default-analytics-placeholder">
                         <h3>{t('data_analytics')}</h3>
@@ -897,8 +981,9 @@ function AnalyticsSidebar() {
 
     // If no data, show placeholder (NDVI selected but no data fetched)
     return (
-        <aside className={asideCls}>
+        <aside className={asideCls} style={asideStyle}>
             {toggleBtn}
+            {resizerEl}
             <div className="analytics-sidebar-inner">
                 <div className="default-analytics-placeholder">
                     <h3>{t('data_analytics')}</h3>

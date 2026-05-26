@@ -541,6 +541,77 @@ export async function deleteExpenditure(expId) {
 }
 
 // ===================================================================
+// IOT SENSOR APIs
+// ===================================================================
+
+/**
+ * Get IoT Config for a field
+ */
+export async function getIoTConfig(fieldId) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${BASE_URL}/api/fields/${fieldId}/iot-config`, { headers });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching IoT config:', error);
+        throw error;
+    }
+}
+
+/**
+ * Save/Update IoT Config for a field
+ */
+export async function saveIoTConfig(fieldId, configData) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${BASE_URL}/api/fields/${fieldId}/iot-config`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(configData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error saving IoT config:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get IoT sensor data for a field, optionally forcing a sync with ThingSpeak
+ */
+export async function getIoTData(fieldId, sync = false) {
+    try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${BASE_URL}/api/fields/${fieldId}/iot-data?sync=${sync}`, { headers });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching IoT data:', error);
+        throw error;
+    }
+}
+
+// ===================================================================
 // Export all API functions
 // ===================================================================
 
@@ -576,4 +647,10 @@ export default {
     addExpenditure,
     getExpenditures,
     deleteExpenditure,
+
+    // IoT Sensors
+    getIoTConfig,
+    saveIoTConfig,
+    getIoTData,
 };
+
