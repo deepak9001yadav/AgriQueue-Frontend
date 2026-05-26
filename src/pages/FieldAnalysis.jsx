@@ -941,7 +941,7 @@ function AppContent() {
             />
 
             {/* Date Carousel */}
-            {currentLayerType && drawnAOI && dateCarouselKey > 0 && (
+            {currentLayerType && currentLayerType !== 'iot' && drawnAOI && dateCarouselKey > 0 && (
               <DateCarousel
                 key={dateCarouselKey} // Force full unmount and remount on trigger
                 onDateSelect={(date) => {

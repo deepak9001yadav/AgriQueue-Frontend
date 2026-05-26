@@ -27,7 +27,7 @@ ChartJS.register(
     Filler
 );
 
-function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
+function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
     const [searchParams] = useSearchParams();
     const fieldId = searchParams.get('field_id');
 
@@ -61,6 +61,13 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
         fetchConfigAndData();
     }, [fieldId]);
 
+    // Cleanup IoT Marker from Map on leaving or unmounting IoT tab
+    useEffect(() => {
+        return () => {
+            window.mapFunctions?.hideIoTMarker();
+        };
+    }, []);
+
     const fetchConfigAndData = async () => {
         setLoading(true);
         try {
@@ -71,11 +78,27 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
             // 2. Fetch data (no sync, just read cache)
             const dataRes = await getIoTData(fieldId, false);
             setSensorData(dataRes.data || []);
-            
+
             if (dataRes.data && dataRes.data.length > 0) {
                 setLatestReading(dataRes.data[dataRes.data.length - 1]);
             } else {
                 setLatestReading(null);
+            }
+
+            // Draw/Render marker on map if channel coordinates exist
+            if (dataRes.channel_metadata && dataRes.channel_metadata.latitude && dataRes.channel_metadata.longitude) {
+                const latest = dataRes.data && dataRes.data.length > 0 ? dataRes.data[dataRes.data.length - 1] : null;
+                window.mapFunctions?.showIoTMarker(
+                    dataRes.channel_metadata.latitude,
+                    dataRes.channel_metadata.longitude,
+                    dataRes.channel_metadata.name,
+                    {
+                        channelId: dataRes.channel_id,
+                        soilMoisture: latest?.soil_moisture,
+                        temp: latest?.temperature,
+                        humidity: latest?.humidity
+                    }
+                );
             }
         } catch (err) {
             console.error('Error loading IoT details:', err);
@@ -87,7 +110,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
     const handleSync = async () => {
         if (!fieldId) return;
         setSyncing(true);
-        
+
         Swal.fire({
             title: 'Syncing Data...',
             html: 'Connecting to ThingSpeak servers and executing data cleaning algorithms...',
@@ -100,14 +123,30 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
         try {
             const res = await getIoTData(fieldId, true); // force sync
             setSensorData(res.data || []);
-            
+
             if (res.data && res.data.length > 0) {
                 setLatestReading(res.data[res.data.length - 1]);
             }
 
+            // Draw/Update marker on map upon successful live sync
+            if (res.channel_metadata && res.channel_metadata.latitude && res.channel_metadata.longitude) {
+                const latest = res.data && res.data.length > 0 ? res.data[res.data.length - 1] : null;
+                window.mapFunctions?.showIoTMarker(
+                    res.channel_metadata.latitude,
+                    res.channel_metadata.longitude,
+                    res.channel_metadata.name,
+                    {
+                        channelId: res.channel_id,
+                        soilMoisture: latest?.soil_moisture,
+                        temp: latest?.temperature,
+                        humidity: latest?.humidity
+                    }
+                );
+            }
+
             if (res.sync_results) {
                 setSyncStats(res.sync_results);
-                
+
                 if (res.sync_results.success) {
                     Swal.fire({
                         icon: 'success',
@@ -180,7 +219,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
                     timer: 2000,
                     showConfirmButton: false
                 });
-                
+
                 setActiveSection('dashboard');
                 // Trigger auto-sync on successful save
                 await handleSync();
@@ -557,7 +596,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
                             <i className="fa-solid fa-wand-magic-sparkles" style={{ color: '#a855f7' }}></i>
                             Data Cleaning Pipeline Auditor
                         </div>
-                        
+
                         {sensorData && sensorData.some(d => d.is_cleaned) ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
                                 {sensorData.slice().reverse().filter(d => d.is_cleaned).map((d, index) => (
@@ -606,7 +645,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => {} } = {}) {
                             type="text"
                             value={config.thingspeak_channel_id}
                             onChange={(e) => setConfig({ ...config, thingspeak_channel_id: e.target.value })}
-                            placeholder="Enter Channel ID (e.g. 12397)"
+                            placeholder="Enter Channel ID (e.g. 12397,1733232)"
                             style={{
                                 padding: '8px 12px',
                                 borderRadius: '6px',

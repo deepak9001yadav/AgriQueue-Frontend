@@ -3382,4 +3382,69 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
   }
 }
 
+/* Custom Pulsing Leaflet IoT Marker Icon */
+.custom-iot-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.iot-marker-wrapper {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iot-marker-pulse {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.4);
+  animation: iotMarkerPulse 1.8s infinite ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.iot-marker-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 0;
+  background: #22c55e;
+  position: absolute;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  border: 2px solid #ffffff;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.iot-marker-pin i {
+  transform: rotate(45deg);
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.iot-marker-pin:hover {
+  transform: rotate(-45deg) scale(1.1);
+  background: #0ea5e9;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.5);
+}
+
+@keyframes iotMarkerPulse {
+  0% {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
 /* ───────────────────────────────────────────────────────────────────────────── */

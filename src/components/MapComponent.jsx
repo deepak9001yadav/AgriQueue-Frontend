@@ -43,6 +43,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     const polygonDrawerRef = useRef(null);
     const rectangleDrawerRef = useRef(null);
     const editorRef = useRef(null);
+    const iotMarkerRef = useRef(null);
 
     const [activeDrawTool, setActiveDrawTool] = useState(null);
     const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading } = useApp();
@@ -257,6 +258,76 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         </div>
       `)
             .openPopup();
+    }, []);
+
+    // Show custom pulsing broadcast tower marker for active IoT Station
+    const showIoTMarker = useCallback((lat, lon, stationName, details = {}) => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        if (!lat || !lon) return;
+
+        // Remove existing IoT marker first
+        if (iotMarkerRef.current) {
+            map.removeLayer(iotMarkerRef.current);
+        }
+
+        const numericLat = parseFloat(lat);
+        const numericLon = parseFloat(lon);
+
+        if (isNaN(numericLat) || isNaN(numericLon)) return;
+
+        // Custom premium green pulse broadcast tower icon
+        const iotIcon = L.divIcon({
+            className: 'custom-iot-marker',
+            html: `
+                <div class="iot-marker-wrapper">
+                    <div class="iot-marker-pulse"></div>
+                    <div class="iot-marker-pin">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                </div>
+            `,
+            iconSize: [42, 42],
+            iconAnchor: [21, 42],
+            popupAnchor: [0, -42]
+        });
+
+        // Add to map and bind popup
+        iotMarkerRef.current = L.marker([numericLat, numericLon], { icon: iotIcon })
+            .addTo(map)
+            .bindPopup(`
+                <div style="font-family: 'Poppins', sans-serif; padding: 4px; min-width: 180px;">
+                    <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px;">
+                        <i class="fa-solid fa-tower-broadcast" style="color: #22c55e;"></i>
+                        <strong style="font-size: 12px; color: #1e293b;">${stationName}</strong>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; display: flex; flex-direction: column; gap: 4px;">
+                        <div><strong>Channel ID:</strong> ${details.channelId || 'N/A'}</div>
+                        <div><strong>Coords:</strong> ${numericLat.toFixed(5)}, ${numericLon.toFixed(5)}</div>
+                        ${details.soilMoisture !== undefined && details.soilMoisture !== null ? `<div><strong>Soil Moisture:</strong> ${details.soilMoisture}%</div>` : ''}
+                        ${details.temp !== undefined && details.temp !== null ? `<div><strong>Temperature:</strong> ${details.temp}°C</div>` : ''}
+                        ${details.humidity !== undefined && details.humidity !== null ? `<div><strong>Humidity:</strong> ${details.humidity}%</div>` : ''}
+                    </div>
+                </div>
+            `);
+
+        // Fly to location smoothly
+        map.flyTo([numericLat, numericLon], 11, {
+            animate: true,
+            duration: 1.5
+        });
+
+        // Automatically reveal popup
+        iotMarkerRef.current.openPopup();
+    }, []);
+
+    const hideIoTMarker = useCallback(() => {
+        const map = mapInstanceRef.current;
+        if (map && iotMarkerRef.current) {
+            map.removeLayer(iotMarkerRef.current);
+            iotMarkerRef.current = null;
+        }
     }, []);
 
     // Expose center function to parent
@@ -631,10 +702,11 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             saveEdits: handleSaveEdits,
             deleteShapes: handleDeleteShapes,
             addOverlayLayer,
-            removeOverlayLayer
-
+            removeOverlayLayer,
+            showIoTMarker,
+            hideIoTMarker
         };
-    }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes]);
+    }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes, addOverlayLayer, removeOverlayLayer, showIoTMarker, hideIoTMarker]);
 
     return (
         <div className="map-container">
