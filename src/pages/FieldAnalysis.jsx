@@ -12,6 +12,7 @@ import MapLegend from '../components/MapLegend';
 import ComparisonView from '../components/ComparisonView';
 import NotificationContainer from '../components/NotificationContainer';
 import DateCarousel from '../components/DateCarousel';
+import IoTSensorPanel from '../components/IoTSensorPanel';
 import { fetchDailyData, fetchIrrigationCalendar, fetchGeeTile, fetchVraMap, generateReport, getFields } from '../utils/api';
 import { getLayerDisplayName } from '../utils/layerConstants';
 import Swal from 'sweetalert2';
@@ -133,7 +134,9 @@ function AppContent() {
     language,
     setLoadingState,
     notify,
-    removeNotification
+    removeNotification,
+    activeModule,
+    setActiveChartParam
   } = useApp();
 
   const [searchParams] = useSearchParams();
@@ -159,6 +162,13 @@ function AppContent() {
   // Comparison view state
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonLayers, setComparisonLayers] = useState([]);
+
+  // Cleanup IoT marker from map when switching back to satellite mode
+  useEffect(() => {
+    if (activeModule === 'satellite') {
+      window.mapFunctions?.hideIoTMarker();
+    }
+  }, [activeModule]);
 
   // Load field from URL if present - Optimized with Cache First
   useEffect(() => {
@@ -920,30 +930,34 @@ function AppContent() {
       <Header onLocationSelect={handleLocationSelect} />
 
       <div className={`main-container ${!isSidebarOpen ? 'sidebar-collapsed' : ''}`}>
-        <Sidebar
-          onFetchData={handleFetchData}
-          onLayerChange={handleLayerChange}
-          onClearMap={handleClearMap}
-          onVectorUpload={handleVectorUpload}
-          onGenerateCalendar={handleGenerateCalendar}
-          onViewCalendar={handleViewCalendar}
-          onGenerateReport={handleGenerateReport}
-          onQueryCurrentLayer={getCurrentLayerInfo}
-          onCompare={handleCompare}
-        />
+        {/* Left Sidebar - Only visible in Satellite Map Analysis Mode */}
+        {activeModule === 'satellite' && (
+          <Sidebar
+            onFetchData={handleFetchData}
+            onLayerChange={handleLayerChange}
+            onClearMap={handleClearMap}
+            onVectorUpload={handleVectorUpload}
+            onGenerateCalendar={handleGenerateCalendar}
+            onViewCalendar={handleViewCalendar}
+            onGenerateReport={handleGenerateReport}
+            onQueryCurrentLayer={getCurrentLayerInfo}
+            onCompare={handleCompare}
+          />
+        )}
 
-        <section className="workspace">
-          <div className="main-panel">
+        <section className="workspace" style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%' }}>
+          {/* Main Map Panel - Standard size in satellite, 50% split screen in IoT Telemetry mode */}
+          <div className="main-panel" style={{ flex: activeModule === 'satellite' ? 1 : '0 0 50%', position: 'relative', height: '100%', transition: 'all 0.4s ease' }}>
             <MapComponent
               onAOICreated={handleAOICreated}
               onLocationSelect={handleLocationSelectSetup}
               fieldId={fieldId}
             />
 
-            {/* Date Carousel */}
-            {currentLayerType && currentLayerType !== 'iot' && drawnAOI && dateCarouselKey > 0 && (
+            {/* Date Carousel - Only in satellite mode */}
+            {activeModule === 'satellite' && currentLayerType && currentLayerType !== 'iot' && drawnAOI && dateCarouselKey > 0 && (
               <DateCarousel
-                key={dateCarouselKey} // Force full unmount and remount on trigger
+                key={dateCarouselKey}
                 onDateSelect={(date) => {
                   setSelectedImageryDate(date);
                   if (currentLayerType) {
@@ -953,18 +967,28 @@ function AppContent() {
               />
             )}
 
-            {/* Map Legend */}
-            {currentLayerType && (
+            {/* Map Legend - Only in satellite mode */}
+            {activeModule === 'satellite' && currentLayerType && (
               <MapLegend layerType={currentLayerType} stats={layerStats} />
             )}
 
-            {/* Irrigation Calendar Panel */}
-            {showCalendar && irrigationCalendar && (
+            {/* Irrigation Calendar Panel - Only in satellite mode */}
+            {activeModule === 'satellite' && showCalendar && irrigationCalendar && (
               <IrrigationCalendarPanel onClose={() => setShowCalendar(false)} />
             )}
           </div>
 
-          <AnalyticsSidebar />
+          {/* Right Panel - Dynamic rendering */}
+          {activeModule === 'satellite' ? (
+            <AnalyticsSidebar />
+          ) : (
+            /* --- NEXT LEVEL SPLIT WORKSPACE: IoT Dashboard right alongside the Map --- */
+            <div className="iot-split-panel" style={{ flex: '0 0 50%', width: '50%', background: 'var(--bg-light, #f8fafc)', borderLeft: '1px solid var(--border-color, #e2e8f0)', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '16px', boxSizing: 'border-box' }}>
+              <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', padding: '8px', minHeight: '100%' }}>
+                <IoTSensorPanel panelWidth={window.innerWidth / 2 - 60} setPanelWidth={() => {}} />
+              </div>
+            </div>
+          )}
         </section>
       </div>
 

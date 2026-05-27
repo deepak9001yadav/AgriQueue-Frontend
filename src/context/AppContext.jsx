@@ -13,6 +13,9 @@ export function AppProvider({ children }) {
     // Sidebar states
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(false); // Initially closed on load
+    
+    // Module switching (satellite / iot)
+    const [activeModule, setActiveModule] = useState('satellite');
 
     // Data states
     const today = new Date();
@@ -196,6 +199,10 @@ export function AppProvider({ children }) {
 
         // Actions
         clearAllData,
+
+        // Module Switcher
+        activeModule,
+        setActiveModule,
     };
 
     return (

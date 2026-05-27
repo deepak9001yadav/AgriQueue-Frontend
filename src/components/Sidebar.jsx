@@ -126,7 +126,6 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         { id: 'irrigation_need', icon: 'fa-faucet-drip', label: 'Irrigation', color: '#2196f3', img: img_irrigation },
         { id: 'soilmoisture', icon: 'fa-droplet-slash', label: 'Soil Moisture', color: '#795548', img: img_soil },
         { id: 'weather', icon: 'fa-cloud-sun', label: 'Weather', color: '#607d8b', img: img_weather },
-        { id: 'iot', icon: 'fa-tower-broadcast', label: 'IoT Sensors', color: '#00bcd4', img: img_soil },
     ];
 
     const zonalLayers = [

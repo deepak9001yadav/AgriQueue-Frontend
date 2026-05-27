@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 import './Header.css';
 
 function Header({ onLocationSelect }) {
-    const { isDarkMode, toggleDarkMode, language, setLanguage, toggleSidebar } = useApp();
+    const { isDarkMode, toggleDarkMode, language, setLanguage, toggleSidebar, activeModule, setActiveModule, setActiveChartParam } = useApp();
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -187,6 +187,61 @@ function Header({ onLocationSelect }) {
                     alt="KrishiZest logo"
                     className="brand-logo"
                 />
+                
+                {/* --- MODULE SWITCHER --- */}
+                <div className="module-switcher-container" style={{ display: 'flex', gap: '6px', background: 'var(--bg-light, #f1f5f9)', padding: '4px', borderRadius: '10px', marginLeft: '12px' }}>
+                    <button
+                        onClick={() => {
+                            setActiveModule('satellite');
+                            setActiveChartParam('ndvi'); // Fallback to standard chart
+                        }}
+                        className={`module-switch-btn ${activeModule === 'satellite' ? 'active' : ''}`}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 14px',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: activeModule === 'satellite' ? 'var(--krishi-green, #00c853)' : 'transparent',
+                            color: activeModule === 'satellite' ? 'white' : 'var(--text-secondary, #64748b)',
+                            transition: 'all 0.2s ease',
+                            boxShadow: activeModule === 'satellite' ? '0 2px 4px rgba(0,200,83,0.2)' : 'none'
+                        }}
+                    >
+                        <i className="fa-solid fa-satellite-dish"></i>
+                        <span>Satellite Map</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setActiveModule('iot');
+                            setActiveChartParam('iot'); // Dynamic switch
+                        }}
+                        className={`module-switch-btn ${activeModule === 'iot' ? 'active' : ''}`}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 14px',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: activeModule === 'iot' ? 'var(--krishi-green, #00c853)' : 'transparent',
+                            color: activeModule === 'iot' ? 'white' : 'var(--text-secondary, #64748b)',
+                            transition: 'all 0.2s ease',
+                            boxShadow: activeModule === 'iot' ? '0 2px 4px rgba(0,200,83,0.2)' : 'none'
+                        }}
+                    >
+                        <i className="fa-solid fa-tower-broadcast"></i>
+                        <span>IoT Telemetry</span>
+                    </button>
+                </div>
+
                 <button
                     onClick={() => navigate('/dashboard')}
                     title="Go to Dashboard"
