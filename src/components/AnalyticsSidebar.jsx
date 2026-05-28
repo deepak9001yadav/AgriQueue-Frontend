@@ -63,7 +63,9 @@ function AnalyticsSidebar() {
         endDate,
         selectedLayer,
         activeChartParam,
-        setActiveChartParam
+        setActiveChartParam,
+        activeMapTab,
+        droneLayer
     } = useApp();
 
     const [activeTab, setActiveTab] = useState('overview');
@@ -666,10 +668,133 @@ function AnalyticsSidebar() {
     };
 
     // MAIN RENDER LOGIC
-    // Only render the sidebar if a layer is selected. 
+    // Only render the sidebar if a layer is selected or drone tab is active. 
     // This keeps it "Gone" on page load until user interracts with layers.
-    if (!selectedLayer) {
+    if (!selectedLayer && activeMapTab !== 'drone') {
         return null;
+    }
+
+    // Case -2: Drone Tab - Show Drone Analytics
+    if (activeMapTab === 'drone') {
+        if (!droneLayer) {
+            return (
+                <aside className={asideCls} style={asideStyle}>
+                    {toggleBtn}
+                    {resizerEl}
+                    <div className="analytics-sidebar-inner" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        <i className="fa-solid fa-helicopter fa-3x" style={{ color: 'var(--krishi-green)', marginBottom: '15px', opacity: 0.5 }}></i>
+                        <h4>No Drone Data</h4>
+                        <p style={{ fontSize: '12px' }}>Please upload a GeoTIFF image in the Drone tab to view analytics.</p>
+                    </div>
+                </aside>
+            );
+        }
+
+        const isLst = droneLayer.type === 'lst';
+        const isNdvi = droneLayer.type === 'ndvi';
+        const stats = droneLayer.stats;
+
+        // Kelvin adjustment if mean > 100
+        const adjustVal = (val) => {
+            if (isLst && val > 100) return val - 273.15;
+            return val;
+        };
+
+        const mean = stats ? adjustVal(stats.mean) : null;
+        const min = stats ? adjustVal(stats.min) : null;
+        const max = stats ? adjustVal(stats.max) : null;
+        const median = stats ? adjustVal(stats.median) : null;
+        const range = stats ? adjustVal(stats.range) : null;
+        const std = stats ? stats.std : null;
+        const count = stats ? stats.count : null;
+
+        const title = isNdvi ? 'Drone Crop Health (NDVI)' : (isLst ? 'Drone Temperature (LST)' : 'Drone Image Analytics');
+        const unit = isLst ? '°C' : '';
+
+        return (
+            <aside className={asideCls} style={asideStyle}>
+                {toggleBtn}
+                {resizerEl}
+                <div className="analytics-sidebar-inner" style={{ padding: '16px', height: '100%', overflowY: 'auto' }}>
+                    <div style={{ textAlign: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
+                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--krishi-green)' }}>
+                            <i className="fa-solid fa-helicopter" style={{ marginRight: '8px' }}></i>
+                            {title}
+                        </h3>
+                    </div>
+
+                    <div className="drone-analytics-card" style={{
+                        background: 'var(--card-bg, rgba(255,255,255,0.02))',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        marginBottom: '15px'
+                    }}>
+                        <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-primary)', textAlign: 'center' }}>
+                            Raster Analysis Overview
+                        </h4>
+
+                        {stats ? (
+                            <>
+                                {/* Large gauge style block */}
+                                <div style={{ textAlign: 'center', padding: '15px 0', marginBottom: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Mean {isLst ? 'Temperature' : 'NDVI'}</div>
+                                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--krishi-green)', fontFamily: 'monospace' }}>
+                                        {mean !== null ? `${mean.toFixed(3)}${unit}` : '--'}
+                                    </div>
+                                    {isNdvi && (
+                                        <div style={{
+                                            display: 'inline-block',
+                                            fontSize: '11px',
+                                            padding: '2px 8px',
+                                            background: mean >= 0.6 ? 'rgba(34, 197, 94, 0.15)' : (mean >= 0.3 ? 'rgba(250, 204, 21, 0.15)' : 'rgba(239, 68, 68, 0.15)'),
+                                            color: mean >= 0.6 ? '#22c55e' : (mean >= 0.3 ? '#facc15' : '#ef4444'),
+                                            borderRadius: '4px',
+                                            marginTop: '6px',
+                                            fontWeight: 700
+                                        }}>
+                                            {mean >= 0.7 ? 'Excellent' : (mean >= 0.5 ? 'Good' : (mean >= 0.3 ? 'Moderate' : 'Poor'))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Minimum</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>{min !== null ? `${min.toFixed(3)}${unit}` : '--'}</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Maximum</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>{max !== null ? `${max.toFixed(3)}${unit}` : '--'}</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Median</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>{median !== null ? `${median.toFixed(3)}${unit}` : '--'}</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Range</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>{range !== null ? `${range.toFixed(3)}${unit}` : '--'}</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Std Dev</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>{std !== null ? std.toFixed(3) : '--'}</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Valid Pixels</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>{count !== null ? count.toLocaleString() : '--'}</div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
+                                <i className="fa-solid fa-circle-exclamation fa-2x" style={{ marginBottom: '10px', opacity: 0.5 }}></i>
+                                <div>No statistics available for this product type.</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </aside>
+        );
     }
 
     // Case -1: IoT Tab - Show IoT Sensor Dashboard

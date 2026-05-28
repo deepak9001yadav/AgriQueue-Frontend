@@ -16,6 +16,7 @@ export function AppProvider({ children }) {
     
     // Module switching (satellite / iot)
     const [activeModule, setActiveModule] = useState('satellite');
+    const [activeMapTab, setActiveMapTab] = useState('layers');
 
     // Data states
     const today = new Date();
@@ -31,6 +32,7 @@ export function AppProvider({ children }) {
     const [currentLayer, setCurrentLayer] = useState(null);
     const [currentLayerData, setCurrentLayerData] = useState(null);
     const [fullChartData, setFullChartData] = useState(null);
+    const [droneLayer, setDroneLayer] = useState(null);
 
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
@@ -125,6 +127,8 @@ export function AppProvider({ children }) {
         setIrrigationCalendar(null);
         setAddedLayers([]);
         setSelectedLayer('');
+        setDroneLayer(null);
+        setActiveMapTab('layers');
     }, []);
 
     const value = {
@@ -164,6 +168,8 @@ export function AppProvider({ children }) {
         setCurrentLayerData,
         fullChartData,
         setFullChartData,
+        droneLayer,
+        setDroneLayer,
 
         // Loading
         isLoading,
@@ -203,6 +209,8 @@ export function AppProvider({ children }) {
         // Module Switcher
         activeModule,
         setActiveModule,
+        activeMapTab,
+        setActiveMapTab,
     };
 
     return (

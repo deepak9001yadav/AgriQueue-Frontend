@@ -15,6 +15,11 @@ export const LAYER_DISPLAY_NAMES = {
     'weather': 'Weather',
     'pca': 'Crop Health',
 
+    // Drone Layers
+    'drone': 'Drone Data',
+    'drone_ndvi': 'Drone NDVI',
+    'drone_lst': 'Drone LST',
+
     // Zonal / VRA Layers
     'vra_ndvi': 'NDVI Zonal Map',
     'vra_savi': 'SAVI Zonal Map',

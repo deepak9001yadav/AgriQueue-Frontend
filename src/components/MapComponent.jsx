@@ -44,9 +44,10 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     const rectangleDrawerRef = useRef(null);
     const editorRef = useRef(null);
     const iotMarkerRef = useRef(null);
+    const droneOverlayRef = useRef(null);
 
     const [activeDrawTool, setActiveDrawTool] = useState(null);
-    const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading, activeModule } = useApp();
+    const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading, activeModule, droneLayer, activeMapTab } = useApp();
 
     // Initialize map
     useEffect(() => {
@@ -189,6 +190,42 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             currentLayerRef.current.setOpacity(opacity / 100);
         }
     }, [opacity]);
+
+    // Render/Manage Drone Layer imageOverlay
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        // If active tab is drone and a drone layer exists
+        if (activeMapTab === 'drone' && droneLayer && droneLayer.imageUrl) {
+            // Remove existing overlay if bounds/URL changed
+            if (droneOverlayRef.current) {
+                map.removeLayer(droneOverlayRef.current);
+                droneOverlayRef.current = null;
+            }
+
+            // flat bounds [minLat, minLon, maxLat, maxLon] -> Leaflet nested [[minLat, minLon], [maxLat, maxLon]]
+            const leafletBounds = [
+                [droneLayer.bounds[0], droneLayer.bounds[1]],
+                [droneLayer.bounds[2], droneLayer.bounds[3]]
+            ];
+
+            const overlay = L.imageOverlay(droneLayer.imageUrl, leafletBounds, {
+                opacity: opacity / 100,
+                zIndex: 1050,
+                crossOrigin: true
+            });
+
+            overlay.addTo(map);
+            droneOverlayRef.current = overlay;
+        } else {
+            // Remove drone overlay if activeTab is not 'drone' or droneLayer is cleared
+            if (droneOverlayRef.current) {
+                map.removeLayer(droneOverlayRef.current);
+                droneOverlayRef.current = null;
+            }
+        }
+    }, [activeMapTab, droneLayer, opacity]);
 
     // Sync drawnAOI from context to map
     useEffect(() => {
@@ -581,6 +618,12 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         if (currentSearchMarkerRef.current) {
             map.removeLayer(currentSearchMarkerRef.current);
             currentSearchMarkerRef.current = null;
+        }
+
+        // Remove drone overlay
+        if (droneOverlayRef.current) {
+            map.removeLayer(droneOverlayRef.current);
+            droneOverlayRef.current = null;
         }
     }, [setCurrentLayer, setDrawnAOI]);
 

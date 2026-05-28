@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getIoTConfig, saveIoTConfig, getIoTData } from '../utils/api';
+import { useApp } from '../context/AppContext';
 import { Line } from 'react-chartjs-2';
 import Swal from 'sweetalert2';
 
@@ -32,6 +33,8 @@ ChartJS.register(
 function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
     const [searchParams] = useSearchParams();
     const fieldId = searchParams.get('field_id');
+    const { activeModule } = useApp();
+    const isMountedRef = useRef(true);
 
     // UI View State
     const [activeSection, setActiveSection] = useState('dashboard'); // 'dashboard' or 'config'
@@ -92,14 +95,22 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
     // Load configuration and data on mount or fieldId change
     useEffect(() => {
-        if (!fieldId) return;
-        fetchConfigAndData();
+        isMountedRef.current = true;
+        if (fieldId) {
+            fetchConfigAndData();
+        }
+
+        return () => {
+            isMountedRef.current = false;
+            if (window.mapFunctions?.hideIoTMarker) {
+                window.mapFunctions.hideIoTMarker();
+            }
+        };
     }, [fieldId]);
 
     // Cleanup IoT Marker from Map on leaving or unmounting IoT tab
     useEffect(() => {
         return () => {
-            // Keep marker if active module is still IoT
             if (window.mapFunctions?.hideIoTMarker) {
                 window.mapFunctions.hideIoTMarker();
             }
@@ -111,10 +122,12 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         try {
             // 1. Fetch config
             const configRes = await getIoTConfig(fieldId);
+            if (!isMountedRef.current) return;
             setConfig(configRes);
 
             // 2. Fetch data (no sync, just read cache)
             const dataRes = await getIoTData(fieldId, false);
+            if (!isMountedRef.current) return;
             setSensorData(dataRes.data || []);
 
             if (dataRes.data && dataRes.data.length > 0) {
@@ -133,25 +146,29 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 setLatestReading(null);
             }
 
-            // Draw/Render marker on map if channel coordinates exist
+            // Draw/Render marker on map if channel coordinates exist and we are in the IoT telemetry active module
             if (dataRes.channel_metadata && dataRes.channel_metadata.latitude && dataRes.channel_metadata.longitude) {
                 const latest = dataRes.data && dataRes.data.length > 0 ? dataRes.data[dataRes.data.length - 1] : null;
-                window.mapFunctions?.showIoTMarker(
-                    dataRes.channel_metadata.latitude,
-                    dataRes.channel_metadata.longitude,
-                    dataRes.channel_metadata.name,
-                    {
-                        channelId: dataRes.channel_id,
-                        soilMoisture: latest?.soil_moisture,
-                        temp: latest?.temperature,
-                        humidity: latest?.humidity
-                    }
-                );
+                if (isMountedRef.current && activeModule === 'iot') {
+                    window.mapFunctions?.showIoTMarker(
+                        dataRes.channel_metadata.latitude,
+                        dataRes.channel_metadata.longitude,
+                        dataRes.channel_metadata.name,
+                        {
+                            channelId: dataRes.channel_id,
+                            soilMoisture: latest?.soil_moisture,
+                            temp: latest?.temperature,
+                            humidity: latest?.humidity
+                        }
+                    );
+                }
             }
         } catch (err) {
             console.error('Error loading IoT details:', err);
         } finally {
-            setLoading(false);
+            if (isMountedRef.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -170,6 +187,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         try {
             const res = await getIoTData(fieldId, true); // force sync
+            if (!isMountedRef.current) return;
             setSensorData(res.data || []);
 
             if (res.data && res.data.length > 0) {
@@ -189,17 +207,19 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             // Draw/Update marker on map upon successful live sync
             if (res.channel_metadata && res.channel_metadata.latitude && res.channel_metadata.longitude) {
                 const latest = res.data && res.data.length > 0 ? res.data[res.data.length - 1] : null;
-                window.mapFunctions?.showIoTMarker(
-                    res.channel_metadata.latitude,
-                    res.channel_metadata.longitude,
-                    res.channel_metadata.name,
-                    {
-                        channelId: res.channel_id,
-                        soilMoisture: latest?.soil_moisture,
-                        temp: latest?.temperature,
-                        humidity: latest?.humidity
-                    }
-                );
+                if (isMountedRef.current && activeModule === 'iot') {
+                    window.mapFunctions?.showIoTMarker(
+                        res.channel_metadata.latitude,
+                        res.channel_metadata.longitude,
+                        res.channel_metadata.name,
+                        {
+                            channelId: res.channel_id,
+                            soilMoisture: latest?.soil_moisture,
+                            temp: latest?.temperature,
+                            humidity: latest?.humidity
+                        }
+                    );
+                }
             }
 
             if (res.sync_results) {

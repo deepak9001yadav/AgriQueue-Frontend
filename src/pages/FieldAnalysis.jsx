@@ -137,10 +137,12 @@ function AppContent() {
     removeNotification,
     activeModule,
     setActiveModule,
-    setActiveChartParam
+    setActiveChartParam,
+    activeMapTab,
+    droneLayer
   } = useApp();
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fieldId = searchParams.get('field_id');
 
   const mapCenterFunctionRef = useRef(null);
@@ -291,8 +293,13 @@ function AppContent() {
     if (tabParam === 'iot') {
       setActiveModule('iot');
       setActiveChartParam('iot');
+
+      // Clear the tab parameter from URL so it doesn't lock the state on subsequent renders
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('tab');
+      setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams, setActiveModule, setActiveChartParam]);
+  }, [searchParams, setSearchParams, setActiveModule, setActiveChartParam]);
 
   // Handle location select from header search
   const handleLocationSelectSetup = useCallback((centerFunction) => {
@@ -1015,8 +1022,15 @@ function AppContent() {
             )}
 
             {/* Map Legend - Only in satellite mode */}
-            {activeModule === 'satellite' && currentLayerType && (
-              <MapLegend layerType={currentLayerType} stats={layerStats} />
+            {activeModule === 'satellite' && (
+              activeMapTab === 'drone' && droneLayer ? (
+                <MapLegend 
+                  layerType={droneLayer.type === 'ndvi' ? 'drone_ndvi' : (droneLayer.type === 'lst' ? 'drone_lst' : 'drone')} 
+                  stats={droneLayer.stats} 
+                />
+              ) : (
+                currentLayerType && <MapLegend layerType={currentLayerType} stats={layerStats} />
+              )
             )}
 
             {/* Irrigation Calendar Panel - Only in satellite mode */}

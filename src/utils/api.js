@@ -611,6 +611,37 @@ export async function getIoTData(fieldId, sync = false) {
     }
 }
 
+/**
+ * Upload a Drone GeoTIFF file (.tif/.tiff)
+ */
+export async function uploadDrone(file) {
+    try {
+        const headers = await getAuthHeaders();
+        // Delete Content-Type to let browser set boundary for multipart/form-data
+        delete headers['Content-Type'];
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${BASE_URL}/api/upload_drone`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error uploading drone GeoTIFF:', error);
+        throw error;
+    }
+}
+
 // ===================================================================
 // Export all API functions
 // ===================================================================
@@ -626,6 +657,7 @@ export default {
     fetchLandCoverAnalysis,
     fetchGeeTile,
     fetchVraMap,
+    uploadDrone,
 
     // Reports
     generateReport,

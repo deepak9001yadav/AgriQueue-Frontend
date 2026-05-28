@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import './ComparisonView.css';
 import { fetchGeeTile } from '../utils/api';
 import { t } from '../utils/translations';
+import { useApp } from '../context/AppContext';
 
 const LAYER_OPTIONS = [
     { value: 'rgb', label: 'FCC' },
@@ -27,6 +28,9 @@ const LAYER_OPTIONS = [
     { value: 'vra_kc', label: 'Kc Zonal Map' },
     { value: 'pca', label: 'Crop Health' },
     { value: 'vra_pca', label: 'Crop Health Zonal Map' },
+    { value: 'drone', label: 'Drone RGB' },
+    { value: 'drone_ndvi', label: 'Drone NDVI' },
+    { value: 'drone_lst', label: 'Drone LST' },
 ];
 
 const layerLegends = {
@@ -250,10 +254,32 @@ const layerLegends = {
             { color: '#f7fcf5', label: 'Zone 1 (Lowest/Monitor)' },
         ],
     },
-    rgb: { items: [{ color: '#FF0000', label: 'Veg' }, { color: '#00FFFF', label: 'Water' }, { color: '#808080', label: 'Bare' }] }
+    rgb: { items: [{ color: '#FF0000', label: 'Veg' }, { color: '#00FFFF', label: 'Water' }, { color: '#808080', label: 'Bare' }] },
+    drone_ndvi: {
+        title: 'Drone NDVI',
+        items: [
+            { color: '#006400', label: 'Dense Vegetation (>0.8)' },
+            { color: '#228B22', label: 'Good Vegetation (0.6 - 0.8)' },
+            { color: '#7FFF00', label: 'Moderate Vegetation (0.4 - 0.6)' },
+            { color: '#FFD700', label: 'Sparse Vegetation (0.2 - 0.4)' },
+            { color: '#8B4513', label: 'Bare Soil / Poor (<0.2)' },
+        ],
+    },
+    drone_lst: {
+        title: 'Drone LST',
+        items: [
+            { color: '#8B0000', label: 'Hot (> 40°C)' },
+            { color: '#FF4500', label: '35 - 40°C' },
+            { color: '#FFA500', label: '30 - 35°C' },
+            { color: '#FFFF00', label: '25 - 30°C' },
+            { color: '#00FFFF', label: '20 - 25°C' },
+            { color: '#0000FF', label: 'Cool (< 20°C)' },
+        ],
+    }
 };
 
 function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, endDate: globalEnd }) {
+    const { droneLayer } = useApp();
     const mapsRef = useRef([]);
     const containerRef = useRef(null);
     const [paneConfigs, setPaneConfigs] = useState([]);
@@ -360,22 +386,44 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
             mapInst._overlayLayer = null;
         }
 
+        // Handle Drone Layer as ImageOverlay
+        if (config.type && config.type.startsWith('drone')) {
+            if (droneLayer && droneLayer.imageUrl && droneLayer.bounds) {
+                const leafletBounds = [
+                    [droneLayer.bounds[0], droneLayer.bounds[1]],
+                    [droneLayer.bounds[2], droneLayer.bounds[3]]
+                ];
+                const layer = L.imageOverlay(droneLayer.imageUrl, leafletBounds, {
+                    opacity: config.opacity / 100,
+                    zIndex: 1050,
+                    crossOrigin: true
+                });
+                layer.addTo(mapInst);
+                mapInst._overlayLayer = layer;
+
+                // Center/fit map on drone image bounds
+                mapInst.fitBounds(leafletBounds, { padding: [10, 10] });
+            } else {
+                console.warn("Drone layer data missing for comparison map!");
+            }
+            return;
+        }
+
         let url = config.url;
 
         // If no URL (or changed parameters require new fetch), fetch it
-        // Note: modify this logic if you want to force re-fetch on param change.
-        // For now, if URL is invalid or missing, fetch.
-        // If we want to support changing params, we need to clear URL in state update.
         if (!url) {
             try {
-                // Ensure valid GeoJSON logic
-                // drawnAOI might be different format? Assuming GeoJSON object here.
-                const tileData = await fetchGeeTile(drawnAOI, config.type, config.date.start, config.date.end);
+                // Determine VRA or GEE fetch
+                let tileData;
+                if (config.type.startsWith('vra_')) {
+                    const parameter = config.type.replace('vra_', '');
+                    tileData = await fetchVraMap(drawnAOI, parameter, null, config.date.start, config.date.end);
+                } else {
+                    tileData = await fetchGeeTile(drawnAOI, config.type, config.date.start, config.date.end);
+                }
                 if (tileData.error) throw new Error(tileData.error);
                 url = tileData.urlFormat;
-
-                // Update local config ref? No need, just use local var
-                // We *could* update state to save this URL for future, but simpler to just use it.
             } catch (err) {
                 console.error("Comparison load error:", err);
                 return; // Fail gracefully
@@ -396,13 +444,14 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
     const updatePane = async (index, updates) => {
         const newConfigs = [...paneConfigs];
         // If critical params change, clear URL to force fetch
+        const isDrone = updates.type && updates.type.startsWith('drone');
         const needsFetch = updates.type || updates.date || (updates.highContrast !== undefined);
         const oldOpacity = newConfigs[index].opacity;
 
         newConfigs[index] = {
             ...newConfigs[index],
             ...updates,
-            url: needsFetch ? null : newConfigs[index].url
+            url: (needsFetch && !isDrone) ? null : newConfigs[index].url
         };
         setPaneConfigs(newConfigs);
 
@@ -475,10 +524,30 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
                             </div>
 
                             <div className="comp-controls" style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-                                {/* Layer Display (Static) */}
-                                <div className="comparison-layer-label">
-                                    {LAYER_OPTIONS.find(opt => opt.value === config.type)?.label || config.type.toUpperCase()}
-                                </div>
+                                {/* Layer Display (Dropdown Select) */}
+                                <select
+                                    className="comparison-layer-select"
+                                    value={config.type}
+                                    onChange={(e) => updatePane(index, { type: e.target.value })}
+                                    style={{
+                                        background: 'rgba(0,0,0,0.6)',
+                                        color: 'white',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '4px',
+                                        padding: '4px 8px',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                        width: '100%',
+                                        outline: 'none',
+                                        marginBottom: '5px'
+                                    }}
+                                >
+                                    {LAYER_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value} style={{ background: '#222' }}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
 
 
 

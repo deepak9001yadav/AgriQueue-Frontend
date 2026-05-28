@@ -226,6 +226,27 @@ const layerLegends = {
             { color: '#f7fcf5', label: 'Lowest/Monitor' },
         ],
     },
+    drone_ndvi: {
+        title: 'Drone Crop Health (NDVI)',
+        items: [
+            { color: '#006400', label: 'Dense Vegetation (>0.8)' },
+            { color: '#228B22', label: 'Good Vegetation (0.6 - 0.8)' },
+            { color: '#7FFF00', label: 'Moderate Vegetation (0.4 - 0.6)' },
+            { color: '#FFD700', label: 'Sparse Vegetation (0.2 - 0.4)' },
+            { color: '#8B4513', label: 'Bare Soil / Poor (<0.2)' },
+        ],
+    },
+    drone_lst: {
+        title: 'Drone Temperature (LST)',
+        items: [
+            { color: '#8B0000', label: 'Hot (> 40°C)' },
+            { color: '#FF4500', label: '35 - 40°C' },
+            { color: '#FFA500', label: '30 - 35°C' },
+            { color: '#FFFF00', label: '25 - 30°C' },
+            { color: '#00FFFF', label: '20 - 25°C' },
+            { color: '#0000FF', label: 'Cool (< 20°C)' },
+        ],
+    },
     // RGB/TCC layers don't need a legend - they're visual representations
 };
 

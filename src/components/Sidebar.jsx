@@ -13,6 +13,7 @@ import img_kc from '../assets/img_kc.png';
 import img_etc from '../assets/img_etc.png';
 import img_weather from '../assets/img_weather.png';
 import { getLayerDisplayName } from '../utils/layerConstants';
+import DroneUploadSection from './DroneUploadSection';
 
 function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGenerateCalendar, onViewCalendar, onGenerateReport, onQueryCurrentLayer, onCompare }) {
     const {
@@ -32,15 +33,15 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         isFetchingData,
         isFetchingLayer,
         isGeneratingCalendar,
-        isGeneratingReport
+        isGeneratingReport,
+        activeMapTab: activeTab,
+        setActiveMapTab: setActiveTab
     } = useApp();
 
     const [uploadedLayers, setUploadedLayers] = useState([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Active sidebar tab
-    const [activeTab, setActiveTab] = useState('layers');
     const [managedLayers, setManagedLayers] = useState([]);
 
     // Sub-tab inside Layers panel (Analysis / Zonal)
@@ -144,6 +145,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
 
     const tabs = [
         { id: 'layers', icon: 'fa-layer-group', label: 'Layers' },
+        { id: 'drone', icon: 'fa-helicopter', label: 'Drone' },
         { id: 'draw', icon: 'fa-pen-to-square', label: 'Draw' },
         { id: 'compare', icon: 'fa-code-compare', label: 'Compare' },
         { id: 'clear', icon: 'fa-rotate-left', label: 'Clear' },
@@ -284,6 +286,30 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {/* ══ DRONE TAB ══ */}
+                {activeTab === 'drone' && (
+                    <div className="sb2-panel">
+                        {/* Opacity slider */}
+                        <div className="sb2-opacity-block">
+                            <div className="sb2-opacity-row">
+                                <span className="sb2-opacity-label">
+                                    <i className="fa-solid fa-circle-half-stroke"></i> Drone Opacity
+                                </span>
+                                <span className="sb2-opacity-val">{opacity}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                className="sb2-range"
+                                min="0" max="100"
+                                value={opacity}
+                                onChange={handleOpacityChange}
+                                style={{ background: `linear-gradient(to right, var(--krishi-green) ${opacity}%, #dde3ea ${opacity}%)` }}
+                            />
+                        </div>
+                        <DroneUploadSection />
                     </div>
                 )}
 
