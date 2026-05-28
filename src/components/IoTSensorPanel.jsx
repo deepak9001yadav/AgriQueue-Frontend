@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getIoTConfig, saveIoTConfig, getIoTData } from '../utils/api';
 import { Line } from 'react-chartjs-2';
@@ -59,6 +59,36 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
     // Zoom control state for graph (visible data points)
     const [visiblePoints, setVisiblePoints] = useState(50);
+
+    // Refs for chart elements to intercept wheel events and lock page scroll during zoom
+    const chartRefMain = useRef(null);
+    const chartRefModal = useRef(null);
+
+    useEffect(() => {
+        const preventDefaultScroll = (e) => {
+            // Prevent the parent page/container from scrolling when scrolling inside the chart
+            e.preventDefault();
+        };
+
+        const mainContainer = chartRefMain.current;
+        if (mainContainer) {
+            mainContainer.addEventListener('wheel', preventDefaultScroll, { passive: false });
+        }
+
+        const modalContainer = chartRefModal.current;
+        if (modalContainer) {
+            modalContainer.addEventListener('wheel', preventDefaultScroll, { passive: false });
+        }
+
+        return () => {
+            if (mainContainer) {
+                mainContainer.removeEventListener('wheel', preventDefaultScroll);
+            }
+            if (modalContainer) {
+                modalContainer.removeEventListener('wheel', preventDefaultScroll);
+            }
+        };
+    }, [sensorData, activeSection, isModalOpen]);
 
     // Load configuration and data on mount or fieldId change
     useEffect(() => {
@@ -633,13 +663,16 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                     )}
 
                     {/* Sensor Time Series Chart */}
-                    <div style={{
-                        padding: '16px',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        borderRadius: '12px',
-                        border: '1px solid var(--border-color)',
-                        height: '240px'
-                    }}>
+                    <div 
+                        ref={chartRefMain}
+                        style={{
+                            padding: '16px',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border-color)',
+                            height: '240px'
+                        }}
+                    >
                         {chartConfig ? (
                             <Line data={chartConfig} options={chartOptions} />
                         ) : (
@@ -1134,7 +1167,10 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                         </div>
                                     )}
                                 </div>
-                                <div style={{ height: '460px', position: 'relative' }}>
+                                <div 
+                                    ref={chartRefModal}
+                                    style={{ height: '460px', position: 'relative' }}
+                                >
                                     {chartConfig ? (
                                         <Line data={chartConfig} options={{
                                             ...chartOptions,
