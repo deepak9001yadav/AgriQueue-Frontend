@@ -161,7 +161,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         Swal.fire({
             title: 'Syncing Data...',
-            html: 'Connecting to ThingSpeak servers and executing data cleaning algorithms...',
+            html: 'Connecting to servers and executing data cleaning algorithms...',
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -245,7 +245,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             Swal.fire({
                 icon: 'error',
                 title: 'Sync Failed',
-                text: err.message || 'Could not fetch data from live ThingSpeak channel.',
+                text: err.message || 'Could not fetch data from live channel.',
                 confirmButtonColor: 'var(--krishi-green)'
             });
         } finally {
@@ -259,7 +259,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         Swal.fire({
             title: 'Verifying Channel Connection...',
-            text: 'Validating ThingSpeak Channel access and mappings...',
+            text: 'Validating Channel access and mappings...',
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -287,7 +287,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             Swal.fire({
                 icon: 'error',
                 title: 'Validation Failed',
-                text: err.message || 'Could not verify ThingSpeak Channel. Please review your credentials.',
+                text: err.message || 'Could not verify Channel. Please review your credentials.',
                 confirmButtonColor: 'var(--krishi-green)'
             });
         }
@@ -886,7 +886,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         gap: '10px'
                     }}>
                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-main)' }}>
-                            ThingSpeak Field Mappings
+                            Field Mappings
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: '10px' }}>
