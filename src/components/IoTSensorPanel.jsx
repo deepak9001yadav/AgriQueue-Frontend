@@ -236,7 +236,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 Swal.fire({
                     icon: 'info',
                     title: 'No Configuration Found',
-                    text: 'Please configure and save your ThingSpeak Channel ID under Channel Settings before syncing.',
+                    text: 'Please configure and save your Channel ID under Channel Settings before syncing.',
                     confirmButtonColor: 'var(--krishi-green)'
                 });
             }
@@ -663,7 +663,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                     )}
 
                     {/* Sensor Time Series Chart */}
-                    <div 
+                    <div
                         ref={chartRefMain}
                         style={{
                             padding: '16px',
@@ -834,7 +834,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             {activeSection === 'config' && (
                 <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>ThingSpeak Channel ID</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>Channel ID</label>
                         <input
                             type="text"
                             value={config.thingspeak_channel_id}
@@ -1167,7 +1167,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                         </div>
                                     )}
                                 </div>
-                                <div 
+                                <div
                                     ref={chartRefModal}
                                     style={{ height: '460px', position: 'relative' }}
                                 >
