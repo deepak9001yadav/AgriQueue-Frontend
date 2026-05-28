@@ -779,7 +779,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                         </span>
                                         ) : latestReading.soil_moisture <= 80 ? (
                                             <span style={{ color: '#16a34a', fontWeight: 500 }}>
-                                                <strong>Optimal Range:</strong> Mitti me nami perfectly healthy hai ({latestReading.soil_moisture.toFixed(1)}%). Soil is well aerated, no watering required right now.
+                                                <strong>Optimal Range:</strong> Moisture in the soil is perfectly healthy ({latestReading.soil_moisture.toFixed(1)}%). Soil is well aerated, no watering required right now.
                                             </span>
                                         ) : (
                                             <span style={{ color: '#0891b2', fontWeight: 500 }}>
