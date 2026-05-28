@@ -15,6 +15,7 @@ import {
     Legend,
     Filler
 } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 
 ChartJS.register(
     CategoryScale,
@@ -24,7 +25,8 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    Filler
+    Filler,
+    zoomPlugin
 );
 
 function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
@@ -55,6 +57,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
 
+    // Zoom control state for graph (visible data points)
+    const [visiblePoints, setVisiblePoints] = useState(50);
+
     // Load configuration and data on mount or fieldId change
     useEffect(() => {
         if (!fieldId) return;
@@ -83,7 +88,17 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             setSensorData(dataRes.data || []);
 
             if (dataRes.data && dataRes.data.length > 0) {
-                setLatestReading(dataRes.data[dataRes.data.length - 1]);
+                const latest = dataRes.data[dataRes.data.length - 1];
+                setLatestReading(latest);
+
+                // Cache IoT metrics instantly to localStorage for Dashboard cards use
+                localStorage.setItem('lastDashboardIoT', JSON.stringify({
+                    fieldName: configRes.exists ? `Field ${fieldId}` : 'Jerukagung (MathWorks Station)',
+                    fieldId: fieldId,
+                    metrics: latest,
+                    allFeeds: dataRes.data,
+                    channelMetadata: dataRes.channel_metadata
+                }));
             } else {
                 setLatestReading(null);
             }
@@ -128,7 +143,17 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             setSensorData(res.data || []);
 
             if (res.data && res.data.length > 0) {
-                setLatestReading(res.data[res.data.length - 1]);
+                const latest = res.data[res.data.length - 1];
+                setLatestReading(latest);
+
+                // Cache synced metrics instantly to localStorage for Dashboard cards use
+                localStorage.setItem('lastDashboardIoT', JSON.stringify({
+                    fieldName: config.exists ? `Field ${fieldId}` : 'Jerukagung (MathWorks Station)',
+                    fieldId: fieldId,
+                    metrics: latest,
+                    allFeeds: res.data,
+                    channelMetadata: res.channel_metadata
+                }));
             }
 
             // Draw/Update marker on map upon successful live sync
@@ -326,6 +351,23 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 bodyFont: { family: 'Poppins', size: 10 },
                 padding: 8,
                 cornerRadius: 6
+            },
+            zoom: {
+                pan: {
+                    enabled: true,
+                    mode: 'x',
+                    threshold: 5
+                },
+                zoom: {
+                    wheel: {
+                        enabled: true,
+                        speed: 0.08
+                    },
+                    pinch: {
+                        enabled: true
+                    },
+                    mode: 'x'
+                }
             }
         },
         scales: {
@@ -569,6 +611,27 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         </div>
                     </div>
 
+                    {/* Mouse Scroll Zoom Tip Banner */}
+                    {sensorData && sensorData.length > 5 && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(34, 197, 94, 0.06)',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: '1px dashed rgba(34, 197, 94, 0.25)',
+                            fontSize: '11px',
+                            color: '#16a34a',
+                            gap: '6px',
+                            marginTop: '-4px',
+                            fontWeight: 600
+                        }}>
+                            <i className="fa-solid fa-mouse" style={{ animation: 'bounce 2s infinite' }}></i>
+                            <span> Pro Tip: Scroll your mouse wheel inside the chart to <strong>Zoom In/Out</strong>, and click &amp; drag to <strong>Pan/Scroll</strong>!</span>
+                        </div>
+                    )}
+
                     {/* Sensor Time Series Chart */}
                     <div style={{
                         padding: '16px',
@@ -619,7 +682,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                         </div>
                                         {Object.entries(d.cleaning_logs || {}).map(([metric, logText]) => (
                                             <div key={metric} style={{ color: '#f97316', fontWeight: 500 }}>
-                                                ⚠️ <strong>{metric.replace('_', ' ')}:</strong> {logText}
+                                                <strong>{metric.replace('_', ' ')}:</strong> {logText}
                                             </div>
                                         ))}
                                     </div>
@@ -652,7 +715,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ fontWeight: 700, color: '#0f766e', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                                     <i className="fa-solid fa-brain" style={{ color: '#14b8a6', fontSize: '16px' }}></i>
-                                    🧠 KrishiuZest AI Agronomic Assistant
+                                    KrishiuZest AI Agronomic Assistant
                                 </div>
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', padding: '3px 8px', borderRadius: '12px', fontSize: '9px', fontWeight: 700 }}>
                                     <span className="live-dot-pulsing" style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', display: 'inline-block' }}></span>
@@ -676,19 +739,18 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                     <div style={{ fontSize: '11px', color: '#475569', lineHeight: '1.4' }}>
                                         {latestReading.soil_moisture < 20 ? (
                                             <span style={{ color: '#ea580c', fontWeight: 600 }}>
-                                                🚨 <strong>Critical Dry Alert:</strong> Soil moisture is extremely low ({latestReading.soil_moisture.toFixed(1)}%). Start irrigation cycle immediately to prevent crop permanent wilting!
+                                                <strong>Critical Dry Alert:</strong> Soil moisture is extremely low ({latestReading.soil_moisture.toFixed(1)}%). Start irrigation cycle immediately to prevent crop permanent wilting!
                                             </span>
-                                        ) : latestReading.soil_moisture < 40 ? (
-                                            <span style={{ color: '#d97706', fontWeight: 500 }}>
-                                                ⚠️ <strong>Mild Hydration Deficit:</strong> Moisture levels are dipping ({latestReading.soil_moisture.toFixed(1)}%). Drip watering recommended in the next 12 hours.
-                                            </span>
+                                        ) : latestReading.soil_moisture < 40 ? (<span style={{ color: '#d97706', fontWeight: 500 }}>
+                                            <strong>Mild Hydration Deficit:</strong> Moisture levels are dipping ({latestReading.soil_moisture.toFixed(1)}%). Drip watering recommended in the next 12 hours.
+                                        </span>
                                         ) : latestReading.soil_moisture <= 80 ? (
                                             <span style={{ color: '#16a34a', fontWeight: 500 }}>
-                                                🟢 <strong>Optimal Range:</strong> Mitti me nami perfectly healthy hai ({latestReading.soil_moisture.toFixed(1)}%). Soil is well aerated, no watering required right now.
+                                                <strong>Optimal Range:</strong> Mitti me nami perfectly healthy hai ({latestReading.soil_moisture.toFixed(1)}%). Soil is well aerated, no watering required right now.
                                             </span>
                                         ) : (
                                             <span style={{ color: '#0891b2', fontWeight: 500 }}>
-                                                💧 <strong>Soil Saturated:</strong> Moisture is high ({latestReading.soil_moisture.toFixed(1)}%). Turn off active sprinklers to avoid root fungal infections.
+                                                <strong>Soil Saturated:</strong> Moisture is high ({latestReading.soil_moisture.toFixed(1)}%). Turn off active sprinklers to avoid root fungal infections.
                                             </span>
                                         )}
                                     </div>
@@ -709,15 +771,15 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                     <div style={{ fontSize: '11px', color: '#475569', lineHeight: '1.4' }}>
                                         {latestReading.temperature > 35 ? (
                                             <span style={{ color: '#ef4444', fontWeight: 600 }}>
-                                                🥵 <strong>Severe Thermal Stress:</strong> Temperature is extremely high ({latestReading.temperature.toFixed(1)}°C). High transpiration rate detected! Crop shading or light misting advised.
+                                                <strong>Severe Thermal Stress:</strong> Temperature is extremely high ({latestReading.temperature.toFixed(1)}°C). High transpiration rate detected! Crop shading or light misting advised.
                                             </span>
                                         ) : latestReading.temperature < 15 ? (
                                             <span style={{ color: '#2563eb', fontWeight: 500 }}>
-                                                🥶 <strong>Cold Stress Alert:</strong> Ambient temperature is low ({latestReading.temperature.toFixed(1)}°C). Crop metabolism might slow down.
+                                                <strong>Cold Stress Alert:</strong> Ambient temperature is low ({latestReading.temperature.toFixed(1)}°C). Crop metabolism might slow down.
                                             </span>
                                         ) : (
                                             <span style={{ color: '#16a34a', fontWeight: 500 }}>
-                                                🟢 <strong>Perfect Climate Comfort:</strong> Thermal ambient is perfect ({latestReading.temperature.toFixed(1)}°C) for optimal photosynthesis rate! Ideal growing condition.
+                                                <strong>Perfect Climate Comfort:</strong> Thermal ambient is perfect ({latestReading.temperature.toFixed(1)}°C) for optimal photosynthesis rate! Ideal growing condition.
                                             </span>
                                         )}
                                     </div>
@@ -726,9 +788,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
                             {/* Live Trend Tracker Footer */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed rgba(16, 185, 129, 0.15)', paddingTop: '10px', fontSize: '10px', color: '#64748b' }}>
-                                <span>📈 <strong>Soil Moisture Trend:</strong> Stable</span>
-                                <span>📡 <strong>Station Ping:</strong> Excellent (34ms)</span>
-                                <span>🕒 <strong>Last Updated:</strong> {latestReading ? new Date(latestReading.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A'}</span>
+                                <span> <strong>Soil Moisture Trend:</strong> Stable</span>
+                                <span> <strong>Station Ping:</strong> Excellent (34ms)</span>
+                                <span> <strong>Last Updated:</strong> {latestReading ? new Date(latestReading.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A'}</span>
                             </div>
                         </div>
                     )}
@@ -1038,17 +1100,40 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             {/* Large Telemetry Chart */}
                             <div style={{
                                 flex: 1,
-                                minHeight: '520px',
+                                minHeight: '560px',
                                 padding: '20px',
                                 background: 'var(--card-bg, #ffffff)',
                                 borderRadius: '16px',
                                 border: '1px solid var(--border-color)',
                                 boxShadow: 'var(--shadow-sm)',
-                                position: 'relative'
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px'
                             }}>
-                                <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>
-                                    High-Resolution Telemetry Analytics
-                                </h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>
+                                        High-Resolution Telemetry Analytics
+                                    </h4>
+
+                                    {/* Large Modal Scroll Zoom Info Badge */}
+                                    {sensorData && sensorData.length > 5 && (
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            background: 'rgba(34, 197, 94, 0.08)',
+                                            padding: '6px 14px',
+                                            borderRadius: '20px',
+                                            fontSize: '11px',
+                                            color: '#16a34a',
+                                            gap: '6px',
+                                            fontWeight: 600
+                                        }}>
+                                            <i className="fa-solid fa-mouse" style={{ animation: 'bounce 2s infinite' }}></i>
+                                            <span>💡 Scroll mouse wheel to <strong>Zoom</strong> | Click &amp; Drag to <strong>Pan/Scroll</strong></span>
+                                        </div>
+                                    )}
+                                </div>
                                 <div style={{ height: '460px', position: 'relative' }}>
                                     {chartConfig ? (
                                         <Line data={chartConfig} options={{

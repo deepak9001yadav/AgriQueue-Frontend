@@ -46,7 +46,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     const iotMarkerRef = useRef(null);
 
     const [activeDrawTool, setActiveDrawTool] = useState(null);
-    const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading } = useApp();
+    const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading, activeModule } = useApp();
 
     // Initialize map
     useEffect(() => {
@@ -192,6 +192,15 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
 
     // Sync drawnAOI from context to map
     useEffect(() => {
+        // If the active module is IoT telemetry, do NOT show the AOI outline polygon
+        // or focus bounds. Keep the map blank/satellite focused until coordinates are loaded!
+        if (activeModule === 'iot') {
+            if (drawnItemsRef.current) {
+                drawnItemsRef.current.clearLayers();
+            }
+            return;
+        }
+
         if (drawnAOI && mapInstanceRef.current && drawnItemsRef.current) {
             // Check if map is empty (or we want to overwrite), if so, load the AOI
             // Ideally we only load if it's NOT already drawn. 
@@ -219,7 +228,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
                 }
             }
         }
-    }, [drawnAOI]);
+    }, [drawnAOI, activeModule]);
 
     // Center map on location
     const centerOnLocation = useCallback((lat, lon, name) => {

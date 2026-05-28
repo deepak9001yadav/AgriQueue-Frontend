@@ -5,7 +5,7 @@ import { Chart } from 'chart.js/auto';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Swal from 'sweetalert2';
-import { getFields, saveField, getLastIrrigationCalendar, getUserAreaSummary } from '../utils/api';
+import { getFields, saveField, getLastIrrigationCalendar, getUserAreaSummary, getIoTData } from '../utils/api';
 import { kml } from '@mapbox/togeojson';
 import './Dashboard.css';
 
@@ -17,7 +17,8 @@ function Dashboard() {
     const [fields, setFields] = useState([]);
     const [irrigationData, setIrrigationData] = useState(null);
     const [cropHealthData, setCropHealthData] = useState(null);
-    const [loading, setLoading] = useState({ fields: true, irrigation: true, cropHealth: true });
+    const [activeIoTData, setActiveIoTData] = useState(null);
+    const [loading, setLoading] = useState({ fields: true, irrigation: true, cropHealth: true, iot: true });
     // DB-sourced area summary (authoritative total from database SUM query)
     const [dbAreaSummary, setDbAreaSummary] = useState(null);
 
@@ -105,13 +106,40 @@ function Dashboard() {
                 if (data && data.length > 0) {
                     setFields(data); // Screen update karo naye data se
                     localStorage.setItem('fields', JSON.stringify(data)); // Naya data save karo next time ke liye
+                    
+                    // Fetch IoT telemetry data for the active/first field
+                    try {
+                        const firstFieldId = data[0].id;
+                        const iotResponse = await getIoTData(firstFieldId, false);
+                        if (iotResponse?.data && iotResponse.data.length > 0) {
+                            setActiveIoTData({
+                                fieldName: data[0].name,
+                                fieldId: firstFieldId,
+                                metrics: iotResponse.data[iotResponse.data.length - 1],
+                                allFeeds: iotResponse.data,
+                                channelMetadata: iotResponse.channel_metadata
+                            });
+                            console.log('✅ Loaded fresh IoT data for Dashboard:', iotResponse.channel_metadata?.name);
+                        }
+                    } catch (iotErr) {
+                        console.log('Failed to fetch IoT data for dashboard:', iotErr);
+                    }
                 }
             } catch (error) {
                 console.log('Backend fail hua, purana data hi dikhega');
             } finally {
-                setLoading(prev => ({ ...prev, fields: false })); // Ensure spinner is off
+                setLoading(prev => ({ ...prev, fields: false, iot: false })); // Ensure spinner is off
             }
         }
+        
+        // Also load from cache first if exists
+        const cachedIoT = localStorage.getItem('lastDashboardIoT');
+        if (cachedIoT) {
+            try {
+                setActiveIoTData(JSON.parse(cachedIoT));
+            } catch(e) {}
+        }
+        
         loadFields();
     }, []);
 
@@ -975,49 +1003,224 @@ function Dashboard() {
                         <Link to="/fields" className="view-all-link">View All Fields</Link>
                     </div>
 
-                    {/* Recommendations Card (unchanged) */}
-                    <div className="card">
+                    {/* Recommendations Card */}
+                    <div className="card" onClick={() => activeIoTData && navigate(`/app?field_id=${activeIoTData.fieldId}&tab=iot`)} style={{ cursor: activeIoTData ? 'pointer' : 'default' }}>
                         <div className="card-header">
                             <i className="fas fa-user-check card-icon"></i>
                             <span className="card-title">Recommendations</span>
                         </div>
                         <div className="card-body">
-                            <div className="empty-state">
-                                <i className="far fa-clipboard"></i>
-                                <div className="empty-title">No Recommendations</div>
-                                <div className="empty-text">Here you will see recommendations from your dealer</div>
-                            </div>
+                            {activeIoTData && activeIoTData.metrics ? (
+                                <div style={{ padding: '8px 4px' }}>
+                                    <div style={{ fontWeight: 700, color: '#00c853', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                        <i className="fa-solid fa-brain"></i> AI Advisory ({activeIoTData.fieldName})
+                                    </div>
+                                    <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                                        {activeIoTData.metrics.soil_moisture < 40 ? (
+                                            <strong>⚠️ Mild Hydration Deficit detected:</strong>
+                                        ) : (
+                                            <strong>🟢 Climate optimal range:</strong>
+                                        )}
+                                        {activeIoTData.metrics.soil_moisture < 20 ? (
+                                            " Mitti me nami extremely critical low hai. Please run your drip irrigation system immediately!"
+                                        ) : activeIoTData.metrics.soil_moisture < 40 ? (
+                                            " Soil moisture limits are low. Watering recommended within 12 hours."
+                                        ) : (
+                                            " Soil moisture is healthy. Temperature is comfortable for optimal crop growth!"
+                                        )}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="empty-state">
+                                    <i className="far fa-clipboard"></i>
+                                    <div className="empty-title">No Recommendations</div>
+                                    <div className="empty-text">Here you will see recommendations from your dealer</div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Soil Moisture Card (unchanged) */}
-                    <div className="card">
+                    {/* Soil Moisture Card */}
+                    <div className="card" onClick={() => activeIoTData && navigate(`/app?field_id=${activeIoTData.fieldId}&tab=iot`)} style={{ cursor: activeIoTData ? 'pointer' : 'default' }}>
                         <div className="card-header">
                             <i className="fas fa-tint card-icon"></i>
                             <span className="card-title">Soil Moisture Status</span>
                         </div>
                         <div className="card-body">
-                            <div className="empty-state">
-                                <i className="fas fa-layer-group"></i>
-                                <div className="empty-title">Install a Sensor</div>
-                                <div className="empty-text">Need to install/register a sensor?</div>
-                            </div>
+                            {activeIoTData && activeIoTData.metrics ? (
+                                <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                                    <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--krishi-dark, #1b3b2f)' }}>
+                                        {activeIoTData.metrics.soil_moisture.toFixed(1)}%
+                                    </div>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        fontSize: '11px',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        fontWeight: 700,
+                                        marginTop: '8px',
+                                        background: activeIoTData.metrics.soil_moisture < 20 ? '#ea580c' : activeIoTData.metrics.soil_moisture < 40 ? '#eab308' : '#22c55e',
+                                        color: 'white'
+                                    }}>
+                                        {activeIoTData.metrics.soil_moisture < 20 ? 'Extremely Dry' : activeIoTData.metrics.soil_moisture < 40 ? 'Dry (Water Soon)' : 'Optimal Level'}
+                                    </div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px' }}>
+                                        Sensor Location: {activeIoTData.channelMetadata?.name || 'IoT Station'}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="empty-state">
+                                    <i className="fas fa-layer-group"></i>
+                                    <div className="empty-title">Install a Sensor</div>
+                                    <div className="empty-text">Need to install/register a sensor?</div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Sensors Card (unchanged) */}
-                    <div className="card">
-                        <div className="card-header">
-                            <i className="fas fa-wifi card-icon"></i>
-                            <span className="card-title">Sensors</span>
-                        </div>
-                        <div className="card-body">
-                            <div className="empty-state">
-                                <i className="far fa-calendar-alt"></i>
-                                <div className="empty-title">No Active Sensors</div>
-                                <div className="empty-text">Need to install/register a sensor? Please use the KrishiZest mobile app</div>
-                            </div>
-                        </div>
+                    {/* Sensors Card */}
+                    <div 
+                        className="card" 
+                        onClick={() => activeIoTData && navigate(`/app?field_id=${activeIoTData.fieldId}&tab=iot`)}
+                        style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            padding: activeIoTData ? 0 : '24px', 
+                            position: 'relative', 
+                            overflow: 'hidden',
+                            cursor: activeIoTData ? 'pointer' : 'default',
+                            minHeight: '260px'
+                        }}
+                    >
+                        {activeIoTData ? (
+                            <>
+                                {/* Floating Header Banner */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    zIndex: 10,
+                                    background: 'rgba(255, 255, 255, 0.85)',
+                                    backdropFilter: 'blur(8px)',
+                                    borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                                    padding: '10px 16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <i className="fas fa-wifi" style={{ color: 'var(--krishi-green, #22c55e)', fontSize: '13px' }}></i>
+                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>Sensors</span>
+                                    </div>
+                                    <span className="live-dot-pulsing" style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block' }}></span>
+                                </div>
+
+                                {/* Full-Size Leaflet Mini Map Container */}
+                                <div 
+                                    id="dashboard-mini-map" 
+                                    style={{ 
+                                        height: '100%', 
+                                        width: '100%', 
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        zIndex: 1,
+                                        borderRadius: '12px'
+                                    }}
+                                >
+                                    {/* Dynamic Leaflet Mini Map Initializer hook */}
+                                    {(() => {
+                                        setTimeout(() => {
+                                            const container = document.getElementById('dashboard-mini-map');
+                                            if (!container || container._leaflet_id) return;
+                                            
+                                            const lat = parseFloat(activeIoTData.channelMetadata?.latitude) || -7.73055;
+                                            const lon = parseFloat(activeIoTData.channelMetadata?.longitude) || 109.54030;
+                                            
+                                            const miniMap = L.map('dashboard-mini-map', {
+                                                center: [lat, lon],
+                                                zoom: 13,
+                                                zoomControl: false,
+                                                attributionControl: false,
+                                                scrollWheelZoom: false,
+                                                dragging: false
+                                            });
+                                            
+                                            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                                                maxZoom: 19
+                                            }).addTo(miniMap);
+                                            
+                                            // Premium green pulsing Leaflet divIcon marker
+                                            const pulsingIcon = L.divIcon({
+                                                className: 'mini-gps-marker',
+                                                html: `
+                                                    <div class="iot-marker-wrapper" style="transform: scale(0.65); transform-origin: center bottom;">
+                                                        <div class="iot-marker-pulse"></div>
+                                                        <div class="iot-marker-pin" style="background: #22c55e;">
+                                                            <i class="fa-solid fa-tower-broadcast" style="color: white; transform: rotate(45deg);"></i>
+                                                        </div>
+                                                    </div>
+                                                `,
+                                                iconSize: [30, 30],
+                                                iconAnchor: [15, 30]
+                                            });
+                                            
+                                            L.marker([lat, lon], { icon: pulsingIcon }).addTo(miniMap);
+                                            
+                                            // Invalidate size helper
+                                            setTimeout(() => { miniMap.invalidateSize(); }, 250);
+                                            
+                                            container._leaflet_id = miniMap;
+                                        }, 200);
+                                        return null;
+                                    })()}
+                                </div>
+
+                                {/* Floating Footer Banner */}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    zIndex: 10,
+                                    background: 'rgba(255, 255, 255, 0.9)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+                                    padding: '12px 16px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px'
+                                }}>
+                                    <div style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeIoTData.channelMetadata?.name}>
+                                        {activeIoTData.channelMetadata?.name || 'Active Station'}
+                                    </div>
+                                    <div style={{ fontSize: '9px', color: '#64748b', marginBottom: '2px' }}>
+                                        ID: {activeIoTData.channelMetadata?.id || '1733232'} | Lat: {parseFloat(activeIoTData.channelMetadata?.latitude).toFixed(4)}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px', color: '#334155', borderTop: '1px solid rgba(241, 245, 249, 0.8)', paddingTop: '6px', fontWeight: 600 }}>
+                                        <div>🌡️ Temp: {activeIoTData.metrics?.temperature.toFixed(1)}°C</div>
+                                        <div>💧 Humid: {activeIoTData.metrics?.humidity.toFixed(1)}%</div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="card-header">
+                                    <i className="fas fa-wifi card-icon"></i>
+                                    <span className="card-title">Sensors</span>
+                                </div>
+                                <div className="card-body">
+                                    <div className="empty-state">
+                                        <i className="far fa-calendar-alt"></i>
+                                        <div className="empty-title">No Active Sensors</div>
+                                        <div className="empty-text">Need to install/register a sensor? Please use the KrishiZest mobile app</div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                     {/* Disease Advice Card (unchanged) */}
                     <div className="card">

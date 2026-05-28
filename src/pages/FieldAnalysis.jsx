@@ -136,6 +136,7 @@ function AppContent() {
     notify,
     removeNotification,
     activeModule,
+    setActiveModule,
     setActiveChartParam
   } = useApp();
 
@@ -162,6 +163,43 @@ function AppContent() {
   // Comparison view state
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonLayers, setComparisonLayers] = useState([]);
+
+  // Drag to resize split-width in IoT Telemetry mode
+  const [splitWidth, setSplitWidth] = useState(50); // percentage (e.g. 50%)
+  const isResizingRef = useRef(false);
+
+  const startResizing = useCallback((e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizingRef.current) return;
+      const percentage = (e.clientX / window.innerWidth) * 100;
+      // Clamp between 30% and 70% width
+      if (percentage >= 30 && percentage <= 70) {
+        setSplitWidth(percentage);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingRef.current) {
+        isResizingRef.current = false;
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto';
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   // Cleanup IoT marker from map when switching back to satellite mode
   useEffect(() => {
@@ -246,6 +284,15 @@ function AppContent() {
     }
     loadField();
   }, [fieldId, drawnAOI, setDrawnAOI]);
+
+  // Handle direct navigation to IoT tab via URL searchParams (e.g. ?field_id=62&tab=iot)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'iot') {
+      setActiveModule('iot');
+      setActiveChartParam('iot');
+    }
+  }, [searchParams, setActiveModule, setActiveChartParam]);
 
   // Handle location select from header search
   const handleLocationSelectSetup = useCallback((centerFunction) => {
@@ -945,9 +992,9 @@ function AppContent() {
           />
         )}
 
-        <section className="workspace" style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%' }}>
-          {/* Main Map Panel - Standard size in satellite, 50% split screen in IoT Telemetry mode */}
-          <div className="main-panel" style={{ flex: activeModule === 'satellite' ? 1 : '0 0 50%', position: 'relative', height: '100%', transition: 'all 0.4s ease' }}>
+        <section className="workspace" style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+          {/* Main Map Panel - Standard size in satellite, dynamic split-width in IoT Telemetry mode */}
+          <div className="main-panel" style={{ flex: activeModule === 'satellite' ? 1 : `0 0 ${splitWidth}%`, width: activeModule === 'satellite' ? 'auto' : `${splitWidth}%`, position: 'relative', height: '100%', transition: isResizingRef.current ? 'none' : 'all 0.1s ease' }}>
             <MapComponent
               onAOICreated={handleAOICreated}
               onLocationSelect={handleLocationSelectSetup}
@@ -978,14 +1025,39 @@ function AppContent() {
             )}
           </div>
 
+          {/* Dynamic Resizer Bar - Only visible in IoT active telemetry split screen mode */}
+          {activeModule === 'iot' && (
+            <div
+              className="iot-split-resizer"
+              onMouseDown={startResizing}
+              style={{
+                width: '6px',
+                cursor: 'col-resize',
+                background: 'rgba(226, 232, 240, 0.8)',
+                borderLeft: '1px solid rgba(203, 213, 225, 0.6)',
+                borderRight: '1px solid rgba(203, 213, 225, 0.6)',
+                zIndex: 100,
+                alignSelf: 'stretch',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--krishi-green, #00c853)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(226, 232, 240, 0.8)'; }}
+            >
+              <div style={{ width: '2px', height: '20px', background: '#94a3b8', borderRadius: '1px' }}></div>
+            </div>
+          )}
+
           {/* Right Panel - Dynamic rendering */}
           {activeModule === 'satellite' ? (
             <AnalyticsSidebar />
           ) : (
             /* --- NEXT LEVEL SPLIT WORKSPACE: IoT Dashboard right alongside the Map --- */
-            <div className="iot-split-panel" style={{ flex: '0 0 50%', width: '50%', background: 'var(--bg-light, #f8fafc)', borderLeft: '1px solid var(--border-color, #e2e8f0)', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '16px', boxSizing: 'border-box' }}>
+            <div className="iot-split-panel" style={{ flex: `0 0 ${100 - splitWidth}%`, width: `${100 - splitWidth}%`, background: 'var(--bg-light, #f8fafc)', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '16px', boxSizing: 'border-box', transition: isResizingRef.current ? 'none' : 'all 0.1s ease' }}>
               <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', padding: '8px', minHeight: '100%' }}>
-                <IoTSensorPanel panelWidth={window.innerWidth / 2 - 60} setPanelWidth={() => {}} />
+                <IoTSensorPanel panelWidth={(window.innerWidth * (100 - splitWidth) / 100) - 60} setPanelWidth={() => {}} />
               </div>
             </div>
           )}
