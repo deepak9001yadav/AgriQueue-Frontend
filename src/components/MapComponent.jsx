@@ -44,6 +44,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     const rectangleDrawerRef = useRef(null);
     const editorRef = useRef(null);
     const iotMarkerRef = useRef(null);
+    const iotCoordsRef = useRef(null); // Track active IoT station coordinates
     const droneOverlayRef = useRef(null);
 
     const [activeDrawTool, setActiveDrawTool] = useState(null);
@@ -358,6 +359,8 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
                 </div>
             `);
 
+        iotCoordsRef.current = [numericLat, numericLon];
+
         // Fly to location smoothly
         map.flyTo([numericLat, numericLon], 11, {
             animate: true,
@@ -370,6 +373,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
 
     const hideIoTMarker = useCallback(() => {
         const map = mapInstanceRef.current;
+        iotCoordsRef.current = null;
         if (map && iotMarkerRef.current) {
             map.removeLayer(iotMarkerRef.current);
             iotMarkerRef.current = null;
@@ -658,7 +662,20 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
 
     const handleFitBounds = useCallback(() => {
         const map = mapInstanceRef.current;
-        if (!drawnAOI || !map) return;
+        if (!map) return;
+
+        if (activeModule === 'iot' && iotCoordsRef.current) {
+            map.flyTo(iotCoordsRef.current, 13, {
+                animate: true,
+                duration: 1.2
+            });
+            if (iotMarkerRef.current) {
+                iotMarkerRef.current.openPopup();
+            }
+            return;
+        }
+
+        if (!drawnAOI) return;
 
         try {
             const layer = L.geoJSON(drawnAOI);
@@ -673,7 +690,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         } catch (e) {
             console.error("Error centering map:", e);
         }
-    }, [drawnAOI]);
+    }, [drawnAOI, activeModule]);
 
     // Add Focus Control to Map
     useEffect(() => {

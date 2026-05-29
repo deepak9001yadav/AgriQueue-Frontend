@@ -382,7 +382,7 @@ body {
 
 .sidebar-header {
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-  padding: 18px;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
@@ -415,44 +415,185 @@ body {
   border: none;
 }
 
-.date-inputs-row {
+.date-inputs-card {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
+  background: rgba(240, 244, 248, 0.6);
+  border: 1px solid var(--border-color);
+  padding: 10px 14px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+body.dark-mode .date-inputs-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.date-inputs-card:focus-within {
+  border-color: var(--krishi-green);
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 200, 83, 0.08), 0 0 0 3px rgba(0, 200, 83, 0.15);
+}
+
+body.dark-mode .date-inputs-card:focus-within {
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 200, 83, 0.12), 0 0 0 3px rgba(0, 200, 83, 0.2);
 }
 
 .date-field {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .date-field label {
-  font-size: 10px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
   color: var(--text-secondary);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   display: block;
+}
+
+.date-input-wrapper {
+  position: relative;
+  width: 100%;
 }
 
 .date-field input {
   width: 100%;
-  padding: 8px 12px;
+  border: none !important;
+  background: transparent !important;
+  padding: 2px 0 !important;
   font-size: 13px;
-  border: 1.5px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: white;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-xs);
+  font-weight: 600;
   color: var(--text-primary);
-  font-weight: 500;
+  outline: none !important;
+  box-shadow: none !important;
+  font-family: inherit;
+  cursor: pointer;
+  height: 24px;
 }
 
-.date-field input:hover {
-  border-color: var(--border-dark);
-  box-shadow: var(--shadow-sm);
+.date-arrow-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--krishi-green);
+  font-size: 14px;
+  opacity: 0.7;
+  padding-top: 14px; /* Align with inputs */
+  animation: pulse-arrow 2s infinite ease-in-out;
 }
 
-.date-field input:focus {
-  outline: none;
+@keyframes pulse-arrow {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15) translateX(2px); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+/* Custom Premium Date Presets */
+.date-presets-container {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: none; /* Hide scrollbar for clean UI */
+}
+
+.date-presets-container::-webkit-scrollbar {
+  display: none; /* Safari/Chrome hide */
+}
+
+.preset-pill {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px dashed var(--border-color);
+  background: var(--card-bg, rgba(255, 255, 255, 0.05));
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-sans);
+}
+
+.preset-pill.active {
+  background: linear-gradient(135deg, var(--krishi-green) 0%, #00b0ff 100%);
+  color: white;
+  border-style: solid;
+  border-color: transparent;
+  box-shadow: 0 3px 8px rgba(0, 200, 83, 0.35);
+  font-weight: 700;
+}
+
+.preset-pill:hover:not(.active) {
+  background: rgba(0, 200, 83, 0.08);
   border-color: var(--krishi-green);
-  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.1), var(--shadow-sm);
+  color: var(--krishi-green);
+  transform: translateY(-1.5px);
+  box-shadow: 0 2px 6px rgba(0, 200, 83, 0.15);
+}
+
+.preset-pill:active {
+  transform: translateY(0);
+}
+
+/* Modern Compact Centered Fetch Data Button */
+.fetch-data-btn {
+  width: fit-content !important;
+  min-width: 140px;
+  margin: 14px auto 0 auto !important;
+  background: var(--krishi-green, #00c853) !important;
+  border-radius: var(--radius-full, 9999px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 11px !important;
+  padding: 9px 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+  color: white !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.fetch-data-btn:hover {
+  transform: translateY(-1.5px);
+  background: #00b050 !important;
+  box-shadow: 0 6px 16px rgba(0, 200, 83, 0.35) !important;
+}
+
+.fetch-data-btn:active {
+  transform: translateY(0.5px);
+  box-shadow: 0 3px 8px rgba(0, 200, 83, 0.2) !important;
+}
+
+.fetch-data-btn i {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.fetch-data-btn:hover i {
+  transform: scale(1.15) rotate(15deg);
+}
+
+.fetch-data-btn:disabled {
+  background: #a5d6a7 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* Responsive styles for small screens */
@@ -470,9 +611,14 @@ body {
   }
 
   /* Stack date inputs vertically */
-  .date-inputs-row {
+  .date-inputs-card {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .date-arrow-separator {
+    display: none;
   }
 
   .date-field {
@@ -482,7 +628,6 @@ body {
   .date-field input {
     min-width: 0;
     max-width: 100%;
-    padding: 8px;
     font-size: 13px;
   }
 

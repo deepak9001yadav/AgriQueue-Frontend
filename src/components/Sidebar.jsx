@@ -82,6 +82,29 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
     const handleStartDateChange = (e) => setStartDate(e.target.value);
     const handleEndDateChange = (e) => setEndDate(e.target.value);
 
+    const setQuickDateRange = (daysAgo) => {
+        const todayObj = new Date();
+        const end = todayObj.toISOString().split('T')[0];
+        
+        const startObj = new Date();
+        startObj.setDate(todayObj.getDate() - daysAgo);
+        const start = startObj.toISOString().split('T')[0];
+        
+        setStartDate(start);
+        setEndDate(end);
+    };
+
+    const setSeasonalRange = (season) => {
+        const currentYear = new Date().getFullYear();
+        if (season === 'kharif') {
+            setStartDate(`${currentYear - 1}-06-01`);
+            setEndDate(`${currentYear - 1}-10-31`);
+        } else if (season === 'rabi') {
+            setStartDate(`${currentYear - 1}-11-01`);
+            setEndDate(`${currentYear}-04-30`);
+        }
+    };
+
     const getChartParamForLayer = (layerId) => {
         if (layerId.startsWith('vra_')) return layerId.replace('vra_', '');
         const map = { ndvi: 'ndvi', savi: 'savi', cwsi: 'cwsi', lst: 'lst', lai: 'lai', kc: 'kc', etc: 'etc', irrigation_need: 'irrigation_need', soilmoisture: 'soilmoisture_mm', weather: 'weather', iot: 'iot', rgb: null };
@@ -162,21 +185,76 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                         <i className="fa-solid fa-calendar-days"></i>
                         <span>{t('select_date_range')}</span>
                     </h3>
-                    <div className="date-inputs-row">
+
+                    {/* Sleek Quick-Presets Pills */}
+                    <div className="date-presets-wrapper" style={{ marginBottom: '14px', width: '100%' }}>
+                        <div className="date-presets-container">
+                            {(() => {
+                                const todayObj = new Date();
+                                const todayStr = todayObj.toISOString().split('T')[0];
+                                const currentYear = todayObj.getFullYear();
+                                
+                                const kharifStart = `${currentYear - 1}-06-01`;
+                                const kharifEnd = `${currentYear - 1}-10-31`;
+                                
+                                const rabiStart = `${currentYear - 1}-11-01`;
+                                const rabiEnd = `${currentYear}-04-30`;
+                                
+                                const d30 = new Date();
+                                d30.setDate(todayObj.getDate() - 30);
+                                const d30Str = d30.toISOString().split('T')[0];
+                                
+                                const d90 = new Date();
+                                d90.setDate(todayObj.getDate() - 90);
+                                const d90Str = d90.toISOString().split('T')[0];
+                                
+                                const d180 = new Date();
+                                d180.setDate(todayObj.getDate() - 180);
+                                const d180Str = d180.toISOString().split('T')[0];
+                                
+                                const isActive = (preset) => {
+                                    if (preset === 30) return startDate === d30Str && endDate === todayStr;
+                                    if (preset === 90) return startDate === d90Str && endDate === todayStr;
+                                    if (preset === 180) return startDate === d180Str && endDate === todayStr;
+                                    if (preset === 'kharif') return startDate === kharifStart && endDate === kharifEnd;
+                                    if (preset === 'rabi') return startDate === rabiStart && endDate === rabiEnd;
+                                    return false;
+                                };
+
+                                return (
+                                    <>
+                                        <button type="button" className={`preset-pill ${isActive(30) ? 'active' : ''}`} onClick={() => setQuickDateRange(30)}>30 Days</button>
+                                        <button type="button" className={`preset-pill ${isActive(90) ? 'active' : ''}`} onClick={() => setQuickDateRange(90)}>3 Months</button>
+                                        <button type="button" className={`preset-pill ${isActive(180) ? 'active' : ''}`} onClick={() => setQuickDateRange(180)}>6 Months</button>
+                                        <button type="button" className={`preset-pill ${isActive('kharif') ? 'active' : ''}`} onClick={() => setSeasonalRange('kharif')}>Kharif</button>
+                                        <button type="button" className={`preset-pill ${isActive('rabi') ? 'active' : ''}`} onClick={() => setSeasonalRange('rabi')}>Rabi</button>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+
+                    <div className="date-inputs-card">
                         <div className="date-field">
                             <label htmlFor="start">Start</label>
-                            <input id="start" type="date" max={today} value={startDate} onChange={handleStartDateChange} />
+                            <div className="date-input-wrapper">
+                                <input id="start" type="date" max={today} value={startDate} onChange={handleStartDateChange} />
+                            </div>
+                        </div>
+                        <div className="date-arrow-separator">
+                            <i className="fa-solid fa-arrow-right-long"></i>
                         </div>
                         <div className="date-field">
                             <label htmlFor="end">End</label>
-                            <input id="end" type="date" max={today} value={endDate} onChange={handleEndDateChange} />
+                            <div className="date-input-wrapper">
+                                <input id="end" type="date" max={today} value={endDate} onChange={handleEndDateChange} />
+                            </div>
                         </div>
                     </div>
                     <button
-                        className="btn action-btn-sm"
+                        className="btn action-btn-sm fetch-data-btn"
                         onClick={onFetchData}
                         disabled={isFetchingData}
-                        style={{ marginTop: '10px', width: '100%' }}
                     >
                         <i className="fa-solid fa-magnifying-glass-chart"></i>
                         {isFetchingData ? t('loading') || 'Loading...' : t('fetch_data')}

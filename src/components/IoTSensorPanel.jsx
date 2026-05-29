@@ -330,7 +330,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         const labels = sensorData.map(d => {
             const date = new Date(d.timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            const timeString = date.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+            const dateString = date.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric' });
+            return `${timeString} ${dateString} (IST)`;
         });
 
         const soilMoistureData = sensorData.map(d => d.soil_moisture);
@@ -731,7 +733,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
                                             <span>Telemetry Adjustments</span>
-                                            <span>{new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span>{new Date(d.timestamp).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) + ' IST'}</span>
                                         </div>
                                         {Object.entries(d.cleaning_logs || {}).map(([metric, logText]) => (
                                             <div key={metric} style={{ color: '#f97316', fontWeight: 500 }}>
@@ -1241,7 +1243,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                                     <strong>Anomaly Corrected:</strong> {Object.values(log.cleaning_logs || {}).join(' | ')}
                                                 </div>
                                                 <div style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>
-                                                    {new Date(log.timestamp).toLocaleTimeString()}
+                                                    {new Date(log.timestamp).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST'}
                                                 </div>
                                             </div>
                                         ))}
