@@ -42,12 +42,12 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
     // Configuration state
     const [config, setConfig] = useState({
-        thingspeak_channel_id: '12397',
+        thingspeak_channel_id: '1733232',
         thingspeak_read_api_key: '',
         field_mappings: {
-            soil_moisture: 'field1',
-            temperature: 'field3',
-            humidity: 'field5'
+            soil_moisture: 'field2',
+            temperature: 'field4',
+            humidity: 'field1'
         },
         is_active: true,
         exists: false
@@ -123,7 +123,23 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             // 1. Fetch config
             const configRes = await getIoTConfig(fieldId);
             if (!isMountedRef.current) return;
-            setConfig(configRes);
+            
+            // If no custom config exists in the database yet, prefill our default channel: 1733232
+            if (!configRes || !configRes.thingspeak_channel_id || configRes.thingspeak_channel_id.trim() === '') {
+                setConfig({
+                    thingspeak_channel_id: '1733232',
+                    thingspeak_read_api_key: '',
+                    field_mappings: {
+                        soil_moisture: 'field2',
+                        temperature: 'field4',
+                        humidity: 'field1'
+                    },
+                    is_active: true,
+                    exists: false
+                });
+            } else {
+                setConfig(configRes);
+            }
 
             // 2. Fetch data (no sync, just read cache)
             const dataRes = await getIoTData(fieldId, false);
@@ -874,7 +890,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             required
                         />
                         <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                            To test your Proof of Concept, use the default MathWorks live Weather Station channel ID: <strong>12397</strong>.
+                            To test your Proof of Concept, use the default live Weather Station channel ID: <strong>1733232</strong>.
                         </span>
                     </div>
 
