@@ -253,7 +253,6 @@ body {
   line-height: 1.4;
 }
 
-/* Header - Fixed Top Docked */
 .header {
   position: fixed;
   top: 0;
@@ -265,13 +264,14 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 0 24px;
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   color: var(--text-primary);
-  z-index: 1000;
-  box-shadow: var(--shadow-sm);
-  border-bottom: 1px solid var(--border-color);
+  z-index: 1010; /* Keep header above floating sidebar */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
 .brand {
@@ -364,28 +364,31 @@ body {
   background: white;
 }
 
-/* Sidebar - Docked Left Panel */
+/* Sidebar - Premium Transparent Glassmorphic Docked Panel */
 .sidebar {
-  position: relative;
-  width: 320px;
-  height: 100%;
+  position: relative !important;
+  width: 320px !important;
+  height: 100% !important;
   flex-shrink: 0;
   padding: 0;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafb 100%);
-  border-right: 1px solid var(--border-color);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 900;
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-right: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  z-index: 900 !important;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03) !important;
 }
 
 .sidebar-header {
-  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  background: transparent !important;
   padding: 12px 10px;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  box-shadow: none !important;
 }
 
 .sidebar-body {
@@ -399,11 +402,11 @@ body {
 }
 
 .sidebar-footer {
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: transparent !important;
   padding: 14px 18px;
   border-top: 1px solid var(--border-color);
   flex-shrink: 0;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: none !important;
 }
 
 /* Compact Panel for Header */
@@ -418,13 +421,14 @@ body {
 .date-inputs-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   background: rgba(240, 244, 248, 0.6);
   border: 1px solid var(--border-color);
-  padding: 10px 14px;
+  padding: 8px 10px;
   border-radius: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  width: 100%;
 }
 
 body.dark-mode .date-inputs-card {
@@ -499,7 +503,7 @@ body.dark-mode .date-inputs-card:focus-within {
 /* Custom Premium Date Presets */
 .date-presets-container {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: none; /* Hide scrollbar for clean UI */
@@ -511,7 +515,7 @@ body.dark-mode .date-inputs-card:focus-within {
 
 .preset-pill {
   flex: 0 0 auto;
-  padding: 5px 9px;
+  padding: 5px 8px;
   font-size: 11px;
   font-weight: 600;
   border-radius: var(--radius-full, 9999px);
@@ -560,7 +564,7 @@ body.dark-mode .date-inputs-card:focus-within {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
   border: none !important;
   color: white !important;
-  display: inline-flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -747,10 +751,13 @@ body.dark-mode .date-inputs-card:focus-within {
 }
 
 .sidebar.collapsed {
-  width: 0;
-  padding: 0;
-  overflow: hidden;
-  border-right: none;
+  width: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-right: none !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 .panel {
@@ -2297,16 +2304,16 @@ body.dark-mode {
 }
 
 body.dark-mode .header {
-  background: rgba(30, 32, 33, 0.9);
+  background: rgba(30, 32, 33, 0.78) !important;
   color: #e8e6e3;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body.dark-mode .sidebar {
-  background: #242729;
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  background: rgba(30, 32, 33, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.15) !important;
 }
 
 body.dark-mode .panel {
