@@ -5,7 +5,7 @@ import { Chart } from 'chart.js/auto';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Swal from 'sweetalert2';
-import { getFields, saveField, getLastIrrigationCalendar, getUserAreaSummary, getIoTData } from '../utils/api';
+import { getFields, saveField, getLastIrrigationCalendar, getUserAreaSummary, getIoTData, getLocationDetails } from '../utils/api';
 import { kml } from '@mapbox/togeojson';
 import './Dashboard.css';
 
@@ -440,6 +440,7 @@ function Dashboard() {
     }, []);
 
     // Upload + store AOI with name input step
+    // Upload + store AOI with name input step
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -467,20 +468,13 @@ function Dashboard() {
                 if (isKml) {
                     const parser = new DOMParser();
                     const kmlDom = parser.parseFromString(content, 'text/xml');
-                    // Convert KML to GeoJSON
                     parsedData = kml(kmlDom);
                 } else {
-                    // Parse GeoJSON
                     parsedData = JSON.parse(content);
                 }
 
-                // 2. Extract the Geometry
-                // The backend likely expects a raw Geometry object (Polygon), 
-                // but files often contain a "FeatureCollection" or a "Feature".
                 let geometry = null;
-
                 if (parsedData.type === 'FeatureCollection' && parsedData.features.length > 0) {
-                    // Take the geometry of the first feature
                     geometry = parsedData.features[0].geometry;
                 } else if (parsedData.type === 'Feature') {
                     geometry = parsedData.geometry;
@@ -488,15 +482,344 @@ function Dashboard() {
                     geometry = parsedData;
                 }
 
-                // 3. Validate and Update State
-                if (geometry) {
-                    setPendingFieldData({ geometry });
-
-                    // Auto-fill the name input with the file name (removing extension)
-                    const nameFromFile = file.name.replace(/\.[^/.]+$/, "");
-                    setFieldNameInput(nameFromFile);
-                } else {
+                if (!geometry) {
                     throw new Error("No valid geometry found in file.");
+                }
+
+                // Show boundary loaded success toast first
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'File Uploaded',
+                    text: 'Field boundary loaded! Let\'s enter your field details.',
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+
+                // Calculate center and area
+                let area = 0;
+                let type = 'polygon';
+                let center = null;
+
+                const tempLayer = L.geoJSON(geometry).getLayers()[0];
+                if (tempLayer) {
+                    if (tempLayer instanceof L.Circle) {
+                        type = 'circle';
+                        const radius = tempLayer.getRadius();
+                        area = Math.PI * radius * radius;
+                        center = tempLayer.getLatLng();
+                    } else {
+                        type = 'polygon';
+                        const latLngs = tempLayer.getLatLngs()[0];
+                        center = tempLayer.getBounds().getCenter();
+                        const pointsCount = latLngs.length;
+                        const d2r = Math.PI / 180;
+                        if (pointsCount > 2) {
+                            for (let i = 0; i < pointsCount; i++) {
+                                const p1 = latLngs[i];
+                                const p2 = latLngs[(i + 1) % pointsCount];
+                                area += ((p2.lng - p1.lng) * d2r) *
+                                    (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
+                            }
+                            area = Math.abs(area * 6378137.0 * 6378137.0 / 2.0);
+                        }
+                    }
+                }
+
+                // Show loading state for geocoding
+                Swal.fire({
+                    title: 'Gathering Information...',
+                    text: 'Fetching location details based on boundary...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                let fetchedDistrict = '';
+                let fetchedVillage = '';
+                if (center) {
+                    try {
+                        const locationDetails = await getLocationDetails(center.lat, center.lng);
+                        fetchedDistrict = (locationDetails.district && locationDetails.district !== 'NA') ? locationDetails.district : '';
+                        fetchedVillage = (locationDetails.village && locationDetails.village !== 'NA') ? locationDetails.village : '';
+                    } catch (e) {
+                        console.error("Error fetching location", e);
+                    }
+                }
+
+                Swal.close();
+
+                const defaultName = file.name.replace(/\.[^/.]+$/, "");
+
+                const { value: formValues } = await Swal.fire({
+                    title: 'Field Details <span style="font-size:18px; color:gray; font-weight:normal; display:block;">खेत का विवरण</span>',
+                    html: `
+                        <div style="display: flex; flex-direction: column; gap: 14px; text-align: left; padding-top: 5px;">
+                            <div>
+                                <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                    Field Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ खेत का नाम</span>
+                                </label>
+                                <input id="swal-name" class="swal2-input" value="${defaultName}" placeholder="e.g., North Field" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                        District <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ ज़िला</span>
+                                    </label>
+                                    <input id="swal-district" class="swal2-input" value="${fetchedDistrict}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                        Village * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ गाँव</span>
+                                    </label>
+                                    <input id="swal-village" class="swal2-input" value="${fetchedVillage}" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                        Crop Type * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का प्रकार</span>
+                                    </label>
+                                    <select id="swal-crop-type" class="swal2-select" style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
+                                        <option value="">Select / चुनें</option>
+                                        <option value="Cereal">Cereal / अनाज</option>
+                                        <option value="Legume">Legume / दालें</option>
+                                        <option value="Vegetable">Vegetable / सब्जियां</option>
+                                        <option value="Fruit">Fruit / फल</option>
+                                        <option value="Cash Crop">Cash Crop / नकदी फसल</option>
+                                        <option value="Other">Other / अन्य</option>
+                                    </select>
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                        Crop Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का नाम</span>
+                                    </label>
+                                    <select id="swal-crop-name" class="swal2-select" disabled style="margin: 0; width: 100%; height: 2.5rem; padding: 0 10px; font-size: 14px;">
+                                        <option value="">Select Type First / पहले प्रकार चुनें</option>
+                                    </select>
+                                </div>
+                            </div>
+        
+                            <div id="swal-custom-crop-container" style="display: none; margin-top: 4px;">
+                                <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                    Specify Crop Name * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ फसल का नाम दर्ज करें</span>
+                                </label>
+                                <input id="swal-custom-crop-name" class="swal2-input" placeholder="e.g., Mustard / सरसों" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                            </div>
+        
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                        Sowing Date * <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ बुवाई की तिथि</span>
+                                    </label>
+                                    <input type="date" id="swal-sowing-date" class="swal2-input" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-weight: bold; font-size: 14px; margin-bottom: 4px; display: block;">
+                                        Harvesting Date <span style="font-size: 12px; color: gray; font-weight: normal; margin-left: 4px;">/ कटाई की तिथि</span>
+                                    </label>
+                                    <input type="date" id="swal-harvesting-date" class="swal2-input" style="margin: 0; width: 100%; height: 2.5rem; font-size: 14px;">
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonColor: '#2f7a2f',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Save / सहेजें',
+                    cancelButtonText: 'Cancel / रद्द करें',
+                    width: '450px',
+                    didOpen: () => {
+                        const cropTypeSelect = document.getElementById('swal-crop-type');
+                        const cropNameSelect = document.getElementById('swal-crop-name');
+                        const customCropContainer = document.getElementById('swal-custom-crop-container');
+        
+                        const cropOptions = {
+                            Cereal: [
+                                { value: 'Wheat', label: 'Wheat / गेहूँ' },
+                                { value: 'Paddy', label: 'Paddy (Rice) / धान (चावल)' },
+                                { value: 'Maize', label: 'Maize / मक्का' },
+                                { value: 'Barley', label: 'Barley / जौ' },
+                                { value: 'Bajra', label: 'Bajra / बाजरा' }
+                            ],
+                            Legume: [
+                                { value: 'Gram', label: 'Gram / चना' },
+                                { value: 'Peas', label: 'Peas / मटर' },
+                                { value: 'Lentils', label: 'Lentils (Masoor) / मसूर' },
+                                { value: 'PigeonPea', label: 'Pigeon Pea (Arhar) / अरहर' }
+                            ],
+                            Vegetable: [
+                                { value: 'Potato', label: 'Potato / आलू' },
+                                { value: 'Tomato', label: 'Tomato / टमाटर' },
+                                { value: 'Onion', label: 'Onion / प्याज' },
+                                { value: 'Cauliflower', label: 'Cauliflower / फूलगोभी' }
+                            ],
+                            Fruit: [
+                                { value: 'Mango', label: 'Mango / आम' },
+                                { value: 'Guava', label: 'Guava / अमरूद' },
+                                { value: 'Banana', label: 'Banana / केला' }
+                            ],
+                            'Cash Crop': [
+                                { value: 'Sugarcane', label: 'Sugarcane / गन्ना' },
+                                { value: 'Mustard', label: 'Mustard / सरसों' },
+                                { value: 'Cotton', label: 'Cotton / कपास' }
+                            ]
+                        };
+        
+                        const updateCropNames = () => {
+                            const selectedType = cropTypeSelect.value;
+                            cropNameSelect.innerHTML = '<option value="">Select / चुनें</option>';
+                            
+                            if (!selectedType) {
+                                cropNameSelect.disabled = true;
+                                customCropContainer.style.display = 'none';
+                                return;
+                            }
+        
+                            cropNameSelect.disabled = false;
+        
+                            if (selectedType === 'Other') {
+                                cropNameSelect.innerHTML = '<option value="Other">Other / अन्य</option>';
+                                cropNameSelect.value = 'Other';
+                                customCropContainer.style.display = 'block';
+                                return;
+                            }
+        
+                            const crops = cropOptions[selectedType] || [];
+                            crops.forEach(crop => {
+                                const opt = document.createElement('option');
+                                opt.value = crop.value;
+                                opt.textContent = crop.label;
+                                cropNameSelect.appendChild(opt);
+                            });
+        
+                            const otherOpt = document.createElement('option');
+                            otherOpt.value = 'Other';
+                            otherOpt.textContent = 'Other / अन्य';
+                            cropNameSelect.appendChild(otherOpt);
+        
+                            checkCustomCrop();
+                        };
+        
+                        const checkCustomCrop = () => {
+                            if (cropNameSelect.value === 'Other') {
+                                customCropContainer.style.display = 'block';
+                            } else {
+                                customCropContainer.style.display = 'none';
+                            }
+                        };
+        
+                        cropTypeSelect.addEventListener('change', updateCropNames);
+                        cropNameSelect.addEventListener('change', checkCustomCrop);
+                    },
+                    preConfirm: () => {
+                        const name = document.getElementById('swal-name').value;
+                        const district = document.getElementById('swal-district').value;
+                        const village = document.getElementById('swal-village').value;
+                        const cropType = document.getElementById('swal-crop-type').value;
+                        const cropNameVal = document.getElementById('swal-crop-name').value;
+                        const customCropName = document.getElementById('swal-custom-crop-name').value;
+                        const sowingDate = document.getElementById('swal-sowing-date').value;
+                        const harvestingDate = document.getElementById('swal-harvesting-date').value;
+                        
+                        if (!name) {
+                            Swal.showValidationMessage('Please enter a Field Name / कृपया खेत का नाम दर्ज करें');
+                            return false;
+                        }
+                        if (!village) {
+                            Swal.showValidationMessage('Please enter a Village / कृपया गाँव का नाम दर्ज करें');
+                            return false;
+                        }
+                        if (!cropType) {
+                            Swal.showValidationMessage('Please select a Crop Type / कृपया फसल का प्रकार चुनें');
+                            return false;
+                        }
+                        if (!cropNameVal) {
+                            Swal.showValidationMessage('Please select a Crop Name / कृपया फसल का नाम चुनें');
+                            return false;
+                        }
+                        if (!sowingDate) {
+                            Swal.showValidationMessage('Please select a Sowing Date / कृपया बुवाई की तिथि चुनें');
+                            return false;
+                        }
+        
+                        let cropName = cropNameVal;
+                        if (cropNameVal === 'Other' || cropType === 'Other') {
+                            const finalCustomName = customCropName.trim();
+                            if (!finalCustomName) {
+                                Swal.showValidationMessage('Please specify the Crop Name / कृपया फसल का नाम दर्ज करें');
+                                return false;
+                            }
+                            cropName = finalCustomName;
+                        }
+        
+                        return { name, district, village, cropType, cropName, sowingDate, harvestingDate };
+                    }
+                });
+
+                if (formValues) {
+                    Swal.fire({
+                        title: 'Saving Field...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    const payload = {
+                        name: formValues.name,
+                        type,
+                        geometry,
+                        areaHectares: (area / 10000).toFixed(2),
+                        areaAcres: (area / 4046.86).toFixed(2),
+                        district: formValues.district || 'NA',
+                        village: formValues.village || 'NA',
+                        cropType: formValues.cropType,
+                        cropName: formValues.cropName,
+                        sowingDate: formValues.sowingDate,
+                        harvestingDate: formValues.harvestingDate,
+                        latitude: center ? center.lat : null,
+                        longitude: center ? center.lng : null
+                    };
+
+                    let backendSaved = false;
+                    let backendId = null;
+
+                    try {
+                        const result = await saveField(payload);
+                        if (result.success) {
+                            backendSaved = true;
+                            backendId = result.id;
+                        }
+                    } catch (error) {
+                        console.log('Backend save failed, saving locally');
+                    }
+
+                    const newField = {
+                        id: backendId || Date.now().toString(),
+                        ...payload
+                    };
+
+                    const fieldsLS = JSON.parse(localStorage.getItem('fields') || '[]');
+                    const updatedFields = [...fieldsLS, newField];
+                    localStorage.setItem('fields', JSON.stringify(updatedFields));
+
+                    setFields(prev => [...prev, newField]);
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: backendSaved ? 'Field Saved!' : 'Field Saved Locally',
+                        text: backendSaved
+                            ? `"${payload.name}" has been saved successfully.`
+                            : `"${payload.name}" has been saved locally.`,
+                        confirmButtonColor: '#2f7a2f',
+                        timer: 2000
+                    });
+
+                    navigate(`/app?field_id=${newField.id}`);
                 }
 
             } catch (err) {
@@ -513,107 +836,8 @@ function Dashboard() {
         reader.readAsText(file);
     };
 
-    const handleSaveField = async () => {
-        if (!pendingFieldData || !fieldNameInput.trim()) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Missing Information',
-                text: 'Please enter a field name.',
-                confirmButtonColor: '#2f7a2f'
-            });
-            return;
-        }
-
-        let area = 0;
-        let type = 'polygon';
-
-        // Calculate area
-        try {
-            const layer = L.geoJSON(pendingFieldData.geometry).getLayers()[0];
-            if (layer) {
-                if (layer instanceof L.Circle) {
-                    type = 'circle';
-                    const radius = layer.getRadius();
-                    area = Math.PI * radius * radius;
-                } else {
-                    // Polygon or Rectangle
-                    type = 'polygon'; // Default for GeoJSON usually
-                    const latLngs = layer.getLatLngs()[0]; // Assume simple polygon
-
-                    // Geodesic Area Calculation (Pixel-perfect match to CreateField.jsx logic)
-                    const pointsCount = latLngs.length;
-                    const d2r = Math.PI / 180;
-
-                    if (pointsCount > 2) {
-                        for (let i = 0; i < pointsCount; i++) {
-                            const p1 = latLngs[i];
-                            const p2 = latLngs[(i + 1) % pointsCount];
-                            area += ((p2.lng - p1.lng) * d2r) *
-                                (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
-                        }
-                        area = Math.abs(area * 6378137.0 * 6378137.0 / 2.0);
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("Error calculating area:", e);
-        }
-
-        const payload = {
-            name: fieldNameInput.trim(),
-            type: type,
-            geometry: pendingFieldData.geometry,
-            areaHectares: (area / 10000).toFixed(2),
-            areaAcres: (area / 4046.86).toFixed(2)
-        };
-
-        let backendSaved = false;
-        let backendId = null;
-
-        try {
-            // Try backend save using centralized API
-            const result = await saveField(payload);
-            if (result.success) {
-                backendSaved = true;
-                backendId = result.id;
-            }
-        } catch (error) {
-            console.log('Backend save failed, ignoring error and saving locally');
-        }
-
-        // Always save locally if backend fails or even if it succeeds (to sync)
-        const newField = {
-            id: backendId || Date.now().toString(),
-            ...payload
-        };
-
-        const fieldsLS = JSON.parse(localStorage.getItem('fields') || '[]');
-        const updatedFields = [...fieldsLS, newField];
-        localStorage.setItem('fields', JSON.stringify(updatedFields));
-
-        setFields(prev => [...prev, newField]); // Update React state
-
-        setPendingFieldData(null);
-        setFieldNameInput('');
-
-        await Swal.fire({
-            icon: 'success',
-            title: backendSaved ? 'Field Saved!' : 'Field Saved Locally',
-            text: backendSaved
-                ? `"${payload.name}" has been saved successfully.`
-                : `"${payload.name}" has been saved to your browser (Backend unavailable).`,
-            confirmButtonColor: '#2f7a2f',
-            timer: 2000
-        });
-
-        // Redirect to the detail page with the new ID
-        navigate(`/app?field_id=${newField.id}`);
-    };
-
-    const handleCancelUpload = () => {
-        setPendingFieldData(null);
-        setFieldNameInput('');
-    };
+    const handleSaveField = () => {};
+    const handleCancelUpload = () => {};
 
     const totalArea = fields.reduce((sum, f) => {
         if (f.areaAcres != null && f.areaAcres !== '') {

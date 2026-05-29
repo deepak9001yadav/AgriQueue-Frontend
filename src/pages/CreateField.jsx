@@ -814,9 +814,11 @@ function CreateField() {
                             Swal.fire({
                                 icon: 'success',
                                 title: 'File Uploaded',
-                                text: 'Field boundary loaded successfully!',
-                                timer: 1500,
+                                text: 'Field boundary loaded! Let\'s enter your field details.',
+                                timer: 1800,
                                 showConfirmButton: false
+                            }).then(() => {
+                                handleSave();
                             });
                         } else {
                             throw new Error('Could not create layer from feature');

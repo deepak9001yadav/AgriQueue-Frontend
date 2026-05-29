@@ -218,7 +218,7 @@ function AppContent() {
       // STEP 1: Pehle localStorage se instant load karo (Zero Delay)
       const localFieldsRaw = localStorage.getItem('fields');
       let foundInCache = false;
-      
+
       if (localFieldsRaw) {
         try {
           const localFields = JSON.parse(localFieldsRaw);
@@ -254,7 +254,7 @@ function AppContent() {
       try {
         const fields = await getFields();
         const field = fields.find(f => f.id.toString() === fieldId);
-        
+
         if (field) {
           console.log('Backend Success: Updating field data');
           setDrawnAOI({
@@ -1024,9 +1024,9 @@ function AppContent() {
             {/* Map Legend - Only in satellite mode */}
             {activeModule === 'satellite' && (
               activeMapTab === 'drone' && droneLayer ? (
-                <MapLegend 
-                  layerType={droneLayer.type === 'ndvi' ? 'drone_ndvi' : (droneLayer.type === 'lst' ? 'drone_lst' : 'drone')} 
-                  stats={droneLayer.stats} 
+                <MapLegend
+                  layerType={droneLayer.type === 'ndvi' ? 'drone_ndvi' : (droneLayer.type === 'lst' ? 'drone_lst' : 'drone')}
+                  stats={droneLayer.stats}
                 />
               ) : (
                 currentLayerType && <MapLegend layerType={currentLayerType} stats={layerStats} />
@@ -1071,7 +1071,7 @@ function AppContent() {
             /* --- NEXT LEVEL SPLIT WORKSPACE: IoT Dashboard right alongside the Map --- */
             <div className="iot-split-panel" style={{ flex: `0 0 ${100 - splitWidth}%`, width: `${100 - splitWidth}%`, background: 'var(--bg-light, #f8fafc)', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '16px', boxSizing: 'border-box', transition: isResizingRef.current ? 'none' : 'all 0.1s ease' }}>
               <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', padding: '8px', minHeight: '100%' }}>
-                <IoTSensorPanel panelWidth={(window.innerWidth * (100 - splitWidth) / 100) - 60} setPanelWidth={() => {}} />
+                <IoTSensorPanel panelWidth={(window.innerWidth * (100 - splitWidth) / 100) - 60} setPanelWidth={() => { }} />
               </div>
             </div>
           )}
