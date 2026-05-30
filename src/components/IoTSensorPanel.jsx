@@ -786,7 +786,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ fontWeight: 700, color: '#0f766e', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                                     <i className="fa-solid fa-brain" style={{ color: '#14b8a6', fontSize: '16px' }}></i>
-                                    KrishiuZest AI Agronomic Assistant
+                                    KrishiZest AI Agronomic Assistant
                                 </div>
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', padding: '3px 8px', borderRadius: '12px', fontSize: '9px', fontWeight: 700 }}>
                                     <span className="live-dot-pulsing" style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', display: 'inline-block' }}></span>
