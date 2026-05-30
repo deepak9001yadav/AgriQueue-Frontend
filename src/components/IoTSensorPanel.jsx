@@ -123,7 +123,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             // 1. Fetch config
             const configRes = await getIoTConfig(fieldId);
             if (!isMountedRef.current) return;
-            
+
             // If no custom config exists in the database yet, prefill our default channel: 1733232
             if (!configRes || !configRes.thingspeak_channel_id || configRes.thingspeak_channel_id.trim() === '') {
                 setConfig({

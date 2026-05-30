@@ -238,6 +238,11 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             if (drawnItemsRef.current) {
                 drawnItemsRef.current.clearLayers();
             }
+            if (currentLayerRef.current) {
+                mapInstanceRef.current.removeLayer(currentLayerRef.current);
+                currentLayerRef.current = null;
+                setCurrentLayer(null);
+            }
             return;
         }
 
