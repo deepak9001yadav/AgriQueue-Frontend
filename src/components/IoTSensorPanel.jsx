@@ -40,6 +40,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
     const [activeSection, setActiveSection] = useState('dashboard'); // 'dashboard', 'validation', or 'config'
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [interval, setIntervalVal] = useState('raw'); // 'raw', '15m', '1h', '1d'
+    const [channelMetadata, setChannelMetadata] = useState(null);
 
     // Validation tab state variables
     const [moistureOffset, setMoistureOffset] = useState(0);
@@ -227,7 +228,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 throw new Error("No field boundary (AOI) found. Please select a field on the map first.");
             }
 
-            const satelliteRes = await fetchDailyData(geom, start, end, fieldId);
+            const lat = channelMetadata?.latitude;
+            const lon = channelMetadata?.longitude;
+            const satelliteRes = await fetchDailyData(geom, start, end, fieldId, lat, lon);
             if (satelliteRes.ok && satelliteRes.data) {
                 setChartData(satelliteRes.data);
                 Swal.fire({
@@ -503,6 +506,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             const dataRes = await getIoTData(fieldId, false, null, null, interval);
             if (!isMountedRef.current) return;
             setSensorData(dataRes.data || []);
+            setChannelMetadata(dataRes.channel_metadata || null);
 
             if (dataRes.data && dataRes.data.length > 0) {
                 const latest = dataRes.data[dataRes.data.length - 1];
@@ -567,6 +571,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             const res = await getIoTData(fieldId, true, forceStart, forceEnd, interval); // force sync
             if (!isMountedRef.current) return;
             setSensorData(res.data || []);
+            setChannelMetadata(res.channel_metadata || null);
 
             if (res.data && res.data.length > 0) {
                 const latest = res.data[res.data.length - 1];
@@ -941,7 +946,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                     fontWeight: 600,
                                     outline: 'none',
                                     cursor: 'pointer',
-                                    paddingRight: '6px'
+                                    paddingLeft: '6px',
+                                    paddingRight: '16px',
+                                    width: 'auto'
                                 }}
                             >
                                 <option value="raw" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Raw (1 Min)</option>

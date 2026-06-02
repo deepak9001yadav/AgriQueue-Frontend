@@ -25,7 +25,7 @@ export async function getAuthHeaders() {
 
 
 // Fetch daily data from backend - matches app2.html logic exactly
-export async function fetchDailyData(aoi, startDate, endDate, fieldId = null) {
+export async function fetchDailyData(aoi, startDate, endDate, fieldId = null, iotLatitude = null, iotLongitude = null) {
     const headers = await getAuthHeaders();
     const response = await fetch(`${BASE_URL}/get_daily_data`, {
         method: 'POST',
@@ -34,7 +34,9 @@ export async function fetchDailyData(aoi, startDate, endDate, fieldId = null) {
             aoi: aoi,
             start_date: startDate,
             end_date: endDate,
-            field_id: fieldId
+            field_id: fieldId,
+            iot_latitude: iotLatitude,
+            iot_longitude: iotLongitude
         }),
     });
 
