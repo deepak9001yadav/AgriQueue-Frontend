@@ -1308,16 +1308,16 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         return (
                             <div style={{
                                 padding: '16px',
-                                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%)',
+                                background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(59, 130, 246, 0.04) 100%)',
                                 borderRadius: '16px',
-                                border: '1px solid var(--border-color)',
+                                border: '1px solid rgba(14, 165, 233, 0.15)',
                                 backdropFilter: 'blur(12px)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '12px'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                                    <div style={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
                                         <i className="fa-solid fa-satellite" style={{ color: '#0ea5e9', fontSize: '14px' }}></i>
                                         Cross-Sensor Validation &amp; Calibration Auditor
                                     </div>
@@ -1337,7 +1337,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                     {/* Circular Progress Gauge */}
                                     <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <svg style={{ transform: 'rotate(-90deg)', width: '80px', height: '80px' }}>
-                                            <circle cx="40" cy="40" r="32" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
+                                            <circle cx="40" cy="40" r="32" stroke="rgba(14, 165, 233, 0.1)" strokeWidth="6" fill="transparent" />
                                             <circle cx="40" cy="40" r="32" stroke="var(--krishi-green)" strokeWidth="6" fill="transparent" 
                                                 strokeDasharray={2 * Math.PI * 32}
                                                 strokeDashoffset={(2 * Math.PI * 32) * (1 - stats.integrityScore / 100)} 
@@ -1345,27 +1345,27 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                                             />
                                         </svg>
                                         <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>{stats.integrityScore.toFixed(0)}%</span>
-                                            <span style={{ fontSize: '7px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Accuracy</span>
+                                            <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a' }}>{stats.integrityScore.toFixed(0)}%</span>
+                                            <span style={{ fontSize: '7px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Accuracy</span>
                                         </div>
                                     </div>
 
                                     {/* Stats List */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Pearson Correlation ($r$):</span>
-                                            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{stats.correlation.toFixed(3)}</span>
+                                            <span style={{ color: '#475569' }}>Pearson Correlation ($r$):</span>
+                                            <span style={{ fontWeight: 600, color: '#0f172a' }}>{stats.correlation.toFixed(3)}</span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Mean Absolute Deviation (MAD):</span>
+                                            <span style={{ color: '#475569' }}>Mean Absolute Deviation (MAD):</span>
                                             <span style={{ fontWeight: 600, color: '#0ea5e9' }}>±{stats.avgDeviation.toFixed(1)}%</span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Overlapping Days Audited:</span>
-                                            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{stats.pairedCount} Days</span>
+                                            <span style={{ color: '#475569' }}>Overlapping Days Audited:</span>
+                                            <span style={{ fontWeight: 600, color: '#0f172a' }}>{stats.pairedCount} Days</span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Ground Avg SM vs Satellite:</span>
+                                            <span style={{ color: '#475569' }}>Ground Avg SM vs Satellite:</span>
                                             <span style={{ fontWeight: 600, color: 'var(--krishi-green)' }}>{stats.iotAvgSM.toFixed(1)}% / {stats.satAvgSM.toFixed(1)}%</span>
                                         </div>
                                     </div>
@@ -1373,10 +1373,11 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
                                 <div style={{ 
                                     padding: '8px 10px', 
-                                    background: 'rgba(255, 255, 255, 0.02)', 
+                                    background: 'rgba(255, 255, 255, 0.7)', 
                                     borderRadius: '8px', 
+                                    border: '1px solid rgba(14, 165, 233, 0.1)',
                                     fontSize: '10px', 
-                                    color: 'var(--text-secondary)',
+                                    color: '#334155',
                                     lineHeight: '1.4'
                                 }}>
                                     <i className="fa-solid fa-shield-halved" style={{ color: 'var(--krishi-green)', marginRight: '6px' }}></i>
