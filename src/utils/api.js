@@ -593,7 +593,7 @@ export async function saveIoTConfig(fieldId, configData) {
 /**
  * Get IoT sensor data for a field, optionally forcing a sync with ThingSpeak
  */
-export async function getIoTData(fieldId, sync = false, startDate = null, endDate = null) {
+export async function getIoTData(fieldId, sync = false, startDate = null, endDate = null, interval = null) {
     try {
         const headers = await getAuthHeaders();
         let url = `${BASE_URL}/api/fields/${fieldId}/iot-data?sync=${sync}`;
@@ -602,6 +602,9 @@ export async function getIoTData(fieldId, sync = false, startDate = null, endDat
         }
         if (endDate) {
             url += `&end_date=${endDate}`;
+        }
+        if (interval) {
+            url += `&interval=${interval}`;
         }
         const response = await fetch(url, { headers });
 

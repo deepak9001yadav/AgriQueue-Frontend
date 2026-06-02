@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getIoTConfig, saveIoTConfig, getIoTData } from '../utils/api';
+import { getIoTConfig, saveIoTConfig, getIoTData, getFields, fetchDailyData } from '../utils/api';
 import { useApp } from '../context/AppContext';
 import { Line } from 'react-chartjs-2';
 import Swal from 'sweetalert2';
@@ -33,12 +33,57 @@ ChartJS.register(
 function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
     const [searchParams] = useSearchParams();
     const fieldId = searchParams.get('field_id');
-    const { activeModule } = useApp();
+    const { activeModule, chartData, drawnAOI, startDate, endDate, setChartData } = useApp();
     const isMountedRef = useRef(true);
 
-    // Helper to calculate cross-sensor validation stats
-    const calculateValidationStats = () => {
-        const { chartData } = useApp();
+    // UI View State
+    const [activeSection, setActiveSection] = useState('dashboard'); // 'dashboard', 'validation', or 'config'
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [interval, setIntervalVal] = useState('raw'); // 'raw', '15m', '1h', '1d'
+
+    // Validation tab state variables
+    const [moistureOffset, setMoistureOffset] = useState(0);
+    const [tempOffset, setTempOffset] = useState(0);
+    const [isSavingCalibration, setIsSavingCalibration] = useState(false);
+    const [validationParam, setValidationParam] = useState('moisture'); // 'moisture' or 'temperature'
+    const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
+    const [auditStartDate, setAuditStartDate] = useState('');
+    const [auditEndDate, setAuditEndDate] = useState('');
+    const [activeField, setActiveField] = useState(null);
+
+    // Configuration state
+    const [config, setConfig] = useState({
+        thingspeak_channel_id: '1733232',
+        thingspeak_read_api_key: '',
+        field_mappings: {
+            soil_moisture: 'field2',
+            temperature: 'field4',
+            humidity: 'field1'
+        },
+        is_active: true,
+        exists: false
+    });
+
+    // Data and Sync state
+    const [sensorData, setSensorData] = useState([]);
+    const [latestReading, setLatestReading] = useState(null);
+    const [syncStats, setSyncStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
+
+    // Historical Date Range State
+    const [historyStartDate, setHistoryStartDate] = useState('');
+    const [historyEndDate, setHistoryEndDate] = useState('');
+
+    // Zoom control state for graph (visible data points)
+    const [visiblePoints, setVisiblePoints] = useState(50);
+
+    // Refs for chart elements to intercept wheel events and lock page scroll during zoom
+    const chartRefMain = useRef(null);
+    const chartRefModal = useRef(null);
+
+    // Helper to calculate cross-sensor validation stats with dynamic offset adjustments
+    const calculateValidationStats = (localSMOffset = moistureOffset, localTempOffset = tempOffset) => {
         if (!chartData || chartData.length === 0 || !sensorData || sensorData.length === 0) {
             return null;
         }
@@ -52,8 +97,14 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 iotDaily[dateStr] = { smSum: 0, tempSum: 0, count: 0 };
             }
             if (d.soil_moisture !== null && d.soil_moisture !== undefined) {
-                iotDaily[dateStr].smSum += d.soil_moisture;
-                iotDaily[dateStr].tempSum += d.temperature || 0;
+                // Apply dynamic local offset adjustments on-the-fly for real-time visualization
+                let adjustedSM = d.soil_moisture + Number(localSMOffset);
+                adjustedSM = Math.max(0.0, Math.min(100.0, adjustedSM));
+
+                let adjustedTemp = d.temperature + Number(localTempOffset);
+
+                iotDaily[dateStr].smSum += adjustedSM;
+                iotDaily[dateStr].tempSum += adjustedTemp;
                 iotDaily[dateStr].count += 1;
             }
         });
@@ -96,8 +147,8 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         let totalDev = 0;
 
         pairedData.forEach(p => {
-            const x = p.iotSM;
-            const y = p.satSM;
+            const x = validationParam === 'moisture' ? p.iotSM : p.iotTemp;
+            const y = validationParam === 'moisture' ? p.satSM : p.satTemp;
             sumX += x;
             sumY += y;
             sumXY += x * y;
@@ -115,14 +166,18 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         correlation = Math.max(-1, Math.min(1, correlation));
 
         const avgDeviation = totalDev / n;
-        const integrityScore = Math.max(50, Math.min(100, 100 - (avgDeviation * 0.5)));
+        // Sensitivity factor for deviation penalization
+        const integrityScore = Math.max(50, Math.min(100, 100 - (avgDeviation * (validationParam === 'moisture' ? 0.8 : 1.5))));
 
-        let statusBadge = { text: 'HIGH CONGRUENCE', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
-        if (Math.abs(correlation) < 0.4) {
-            statusBadge = { text: 'DRIFT DETECTED', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' };
-        } else if (Math.abs(correlation) < 0.7) {
-            statusBadge = { text: 'MODERATE CONGRUENCE', color: '#eab308', bg: 'rgba(234, 179, 8, 0.1)' };
+        let statusBadge = { text: 'HIGH CONGRUENCE / उच्च सामंजस्य', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+        if (Math.abs(correlation) < 0.4 || integrityScore < 70) {
+            statusBadge = { text: 'DRIFT DETECTED / सेंसर झुकाव', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' };
+        } else if (Math.abs(correlation) < 0.7 || integrityScore < 85) {
+            statusBadge = { text: 'MODERATE CONGRUENCE / मध्यम सामंजस्य', color: '#eab308', bg: 'rgba(234, 179, 8, 0.1)' };
         }
+
+        const sumSMX = pairedData.reduce((acc, p) => acc + p.iotSM, 0);
+        const sumSMY = pairedData.reduce((acc, p) => acc + p.satSM, 0);
 
         return {
             ready: true,
@@ -130,46 +185,241 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             avgDeviation: avgDeviation,
             integrityScore: integrityScore,
             statusBadge: statusBadge,
-            iotAvgSM: sumX / n,
-            satAvgSM: sumY / n,
-            pairedCount: n
+            iotAvg: sumX / n,
+            satAvg: sumY / n,
+            iotAvgSM: sumSMX / n,
+            satAvgSM: sumSMY / n,
+            pairedCount: n,
+            pairedData: pairedData
         };
     };
 
-    // UI View State
-    const [activeSection, setActiveSection] = useState('dashboard'); // 'dashboard' or 'config'
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Automated single-click satellite alignment & ground sync audit runner
+    const handleGenerateAudit = async () => {
+        if (!fieldId) return;
+        setIsGeneratingAudit(true);
+        const start = auditStartDate || '2026-05-01';
+        const end = auditEndDate || '2026-05-30';
 
-    // Configuration state
-    const [config, setConfig] = useState({
-        thingspeak_channel_id: '1733232',
-        thingspeak_read_api_key: '',
-        field_mappings: {
-            soil_moisture: 'field2',
-            temperature: 'field4',
-            humidity: 'field1'
+        Swal.fire({
+            title: 'Initiating Calibration Audit...',
+            html: 'Connecting to Google Earth Engine satellite models & syncing live Ground IoT sensor feeds...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            // 1. Sync live physical IoT telemetry
+            const syncRes = await getIoTData(fieldId, true, start, end);
+            if (syncRes.data) {
+                setSensorData(syncRes.data);
+            }
+
+            // 2. Fetch GEE Satellite telemetry
+            let geom = drawnAOI;
+            if (!geom && activeField) {
+                geom = activeField.geometry;
+            }
+
+            if (!geom) {
+                throw new Error("No field boundary (AOI) found. Please select a field on the map first.");
+            }
+
+            const satelliteRes = await fetchDailyData(geom, start, end, fieldId);
+            if (satelliteRes.ok && satelliteRes.data) {
+                setChartData(satelliteRes.data);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Audit Complete',
+                    text: 'Satellite GEE model & physical IoT sensor feeds synchronized successfully.',
+                    confirmButtonColor: 'var(--krishi-green)',
+                    timer: 2000
+                });
+            } else {
+                throw new Error(satelliteRes.data?.error || "Failed to fetch satellite GEE telemetry.");
+            }
+        } catch (err) {
+            console.error("Audit generation failed:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Audit Failed',
+                text: err.message || 'Check database config or GEE status.',
+                confirmButtonColor: 'var(--krishi-green)'
+            });
+        } finally {
+            setIsGeneratingAudit(false);
+        }
+    };
+
+    // Commit calibration offsets to configuration database permanently
+    const handleSaveCalibration = async () => {
+        if (!fieldId) return;
+        setIsSavingCalibration(true);
+
+        Swal.fire({
+            title: 'Saving Calibration Offset...',
+            text: 'Writing virtual offsets to database configuration and re-executing data cleaning pipeline...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const updatedConfig = {
+                ...config,
+                field_mappings: {
+                    ...config.field_mappings,
+                    moisture_offset: Number(moistureOffset),
+                    temperature_offset: Number(tempOffset)
+                }
+            };
+
+            const saveRes = await saveIoTConfig(fieldId, updatedConfig);
+            if (saveRes.success) {
+                setConfig(updatedConfig);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Calibration Saved!',
+                    text: 'Calibration offsets persisted. Background cleaning pipeline has re-synced.',
+                    confirmButtonColor: 'var(--krishi-green)',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Re-trigger live sync to apply backend offsets in db cache
+                await handleSync();
+            }
+        } catch (err) {
+            console.error("Error saving calibration offsets:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Calibration Failed',
+                text: err.message || 'Could not save offsets.',
+                confirmButtonColor: 'var(--krishi-green)'
+            });
+        } finally {
+            setIsSavingCalibration(false);
+        }
+    };
+
+    const getValidationChartData = (stats) => {
+        if (!stats || !stats.ready || !stats.pairedData) return null;
+
+        const labels = stats.pairedData.map(d => {
+            const date = new Date(d.date);
+            return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+        });
+
+        const iotDataPoints = stats.pairedData.map(d => validationParam === 'moisture' ? d.iotSM : d.iotTemp);
+        const satDataPoints = stats.pairedData.map(d => validationParam === 'moisture' ? d.satSM : d.satTemp);
+
+        const paramLabel = validationParam === 'moisture' ? 'Moisture (%)' : 'Temperature (°C)';
+        const iotColor = validationParam === 'moisture' ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
+        const satColor = validationParam === 'moisture' ? 'rgb(14, 165, 233)' : 'rgb(168, 85, 247)';
+
+        return {
+            labels,
+            datasets: [
+                {
+                    label: `Ground IoT Sensor / ज़मीनी सेंसर ${paramLabel}`,
+                    data: iotDataPoints,
+                    borderColor: iotColor,
+                    backgroundColor: iotColor.replace('rgb', 'rgba').replace(')', ', 0.08)'),
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: `GEE Satellite / उपग्रह मॉडल ${paramLabel}`,
+                    data: satDataPoints,
+                    borderColor: satColor,
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [6, 4],
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.3,
+                    fill: false
+                }
+            ]
+        };
+    };
+
+    const validationChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
         },
-        is_active: true,
-        exists: false
-    });
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    boxWidth: 10,
+                    font: { size: 10, family: 'Poppins' },
+                    color: 'var(--text-main)'
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                titleFont: { family: 'Poppins', size: 11 },
+                bodyFont: { family: 'Poppins', size: 10 },
+                padding: 8,
+                cornerRadius: 6
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: '#94a3b8',
+                    font: { size: 8 },
+                    maxTicksLimit: 10
+                },
+                grid: { display: false }
+            },
+            y: {
+                type: 'linear',
+                suggestedMin: 0,
+                ticks: {
+                    color: '#94a3b8',
+                    font: { size: 8 }
+                },
+                title: {
+                    display: true,
+                    text: validationParam === 'moisture' ? 'Moisture Percentage (%)' : 'Temperature (°C)',
+                    color: '#94a3b8',
+                    font: { size: 9, weight: '600' }
+                },
+                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+            }
+        }
+    };
 
-    // Data and Sync state
-    const [sensorData, setSensorData] = useState([]);
-    const [latestReading, setLatestReading] = useState(null);
-    const [syncStats, setSyncStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState(false);
+    // All React state variables are declared above calculateValidationStats to avoid Temporal Dead Zone (TDZ) ReferenceErrors.
 
-    // Historical Date Range State
-    const [historyStartDate, setHistoryStartDate] = useState('');
-    const [historyEndDate, setHistoryEndDate] = useState('');
-
-    // Zoom control state for graph (visible data points)
-    const [visiblePoints, setVisiblePoints] = useState(50);
-
-    // Refs for chart elements to intercept wheel events and lock page scroll during zoom
-    const chartRefMain = useRef(null);
-    const chartRefModal = useRef(null);
+    // Load active field details for geometry fallback
+    useEffect(() => {
+        const loadFieldDetails = async () => {
+            if (fieldId) {
+                try {
+                    const fields = await getFields();
+                    const matched = fields.find(f => String(f.id) === String(fieldId));
+                    if (matched) {
+                        setActiveField(matched);
+                    }
+                } catch (err) {
+                    console.error("Error loading active field geometry:", err);
+                }
+            }
+        };
+        loadFieldDetails();
+    }, [fieldId]);
 
     useEffect(() => {
         const preventDefaultScroll = (e) => {
@@ -210,7 +460,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 window.mapFunctions.hideIoTMarker();
             }
         };
-    }, [fieldId]);
+    }, [fieldId, interval]);
 
     // Cleanup IoT Marker from Map on leaving or unmounting IoT tab
     useEffect(() => {
@@ -241,12 +491,16 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                     is_active: true,
                     exists: false
                 });
+                setMoistureOffset(0);
+                setTempOffset(0);
             } else {
                 setConfig(configRes);
+                setMoistureOffset(Number(configRes.field_mappings?.moisture_offset || 0));
+                setTempOffset(Number(configRes.field_mappings?.temperature_offset || 0));
             }
 
             // 2. Fetch data (no sync, just read cache)
-            const dataRes = await getIoTData(fieldId, false);
+            const dataRes = await getIoTData(fieldId, false, null, null, interval);
             if (!isMountedRef.current) return;
             setSensorData(dataRes.data || []);
 
@@ -310,7 +564,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         });
 
         try {
-            const res = await getIoTData(fieldId, true, forceStart, forceEnd); // force sync
+            const res = await getIoTData(fieldId, true, forceStart, forceEnd, interval); // force sync
             if (!isMountedRef.current) return;
             setSensorData(res.data || []);
 
@@ -503,7 +757,11 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         };
     };
 
-    const chartConfig = getChartConfig();
+    const chartConfig = useMemo(() => getChartConfig(), [sensorData]);
+
+    const validationStats = useMemo(() => {
+        return calculateValidationStats(moistureOffset, tempOffset);
+    }, [sensorData, chartData, moistureOffset, tempOffset, validationParam]);
 
     const chartOptions = {
         responsive: true,
@@ -622,6 +880,23 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         Live Dashboard
                     </button>
                     <button
+                        className={`btn ${activeSection === 'validation' ? 'btn-active' : ''}`}
+                        onClick={() => setActiveSection('validation')}
+                        style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            border: '1px solid var(--border-color)',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: activeSection === 'validation' ? 'var(--krishi-green)' : 'transparent',
+                            color: activeSection === 'validation' ? 'white' : 'var(--text-secondary)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <i className="fa-solid fa-satellite-dish" style={{ marginRight: '6px' }}></i>
+                        Validation Center
+                    </button>
+                    <button
                         className={`btn ${activeSection === 'config' ? 'btn-active' : ''}`}
                         onClick={() => setActiveSection('config')}
                         style={{
@@ -641,6 +916,42 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {activeSection === 'dashboard' && (
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            background: 'rgba(255, 255, 255, 0.04)', 
+                            padding: '4px 10px', 
+                            borderRadius: '8px', 
+                            border: '1px solid var(--border-color)',
+                            backdropFilter: 'blur(4px)'
+                        }}>
+                            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <i className="fa-solid fa-filter" style={{ color: 'var(--krishi-green)' }}></i> Interval:
+                            </label>
+                            <select
+                                value={interval}
+                                onChange={(e) => setIntervalVal(e.target.value)}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--text-main)',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    outline: 'none',
+                                    cursor: 'pointer',
+                                    paddingRight: '6px'
+                                }}
+                            >
+                                <option value="raw" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Raw (1 Min)</option>
+                                <option value="15m" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>15 Minutes</option>
+                                <option value="1h" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>1 Hour</option>
+                                <option value="1d" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>1 Day</option>
+                            </select>
+                        </div>
+                    )}
+
                     {activeSection === 'dashboard' && (
                         <div style={{ 
                             display: 'flex', 
@@ -950,7 +1261,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
                     {/* 🛰️ Cross-Sensor Validation & Calibration Auditor */}
                     {(() => {
-                        const stats = calculateValidationStats();
+                        const stats = validationStats;
                         if (!stats) {
                             return (
                                 <div style={{
@@ -1165,6 +1476,396 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                     )}
                 </div>
             )}
+
+            {/* CROSS-SENSOR VALIDATION CENTER TAB */}
+            {activeSection === 'validation' && (() => {
+                const stats = validationStats;
+                
+                if (!stats) {
+                    return (
+                        <div style={{
+                            padding: '24px',
+                            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.45) 100%)',
+                            borderRadius: '20px',
+                            border: '1px solid var(--border-color)',
+                            backdropFilter: 'blur(16px)',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '16px',
+                            alignItems: 'center'
+                        }}>
+                            <div style={{
+                                width: '64px',
+                                height: '64px',
+                                borderRadius: '50%',
+                                background: 'rgba(14, 165, 233, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#0ea5e9',
+                                fontSize: '28px',
+                                marginBottom: '8px'
+                            }}>
+                                <i className="fa-solid fa-satellite-dish" style={{ animation: 'pulse 2s infinite' }}></i>
+                            </div>
+                            
+                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>
+                                Cross-Sensor Data Validation / पार-सेंसर सत्यापन
+                            </h4>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', maxWidth: '320px' }}>
+                                GEE Satellite remote sensing telemetry is required to audit and virtually calibrate your ground sensors.
+                            </p>
+
+                            <div style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '10px', 
+                                width: '100%', 
+                                maxWidth: '320px', 
+                                background: 'rgba(255, 255, 255, 0.02)',
+                                padding: '16px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>From / शुरू की तारीख:</label>
+                                    <input 
+                                        type="date" 
+                                        value={auditStartDate} 
+                                        onChange={(e) => setAuditStartDate(e.target.value)}
+                                        style={{ background: 'var(--bg-light)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px', fontSize: '11px', outline: 'none' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>To / समाप्त की तारीख:</label>
+                                    <input 
+                                        type="date" 
+                                        value={auditEndDate} 
+                                        onChange={(e) => setAuditEndDate(e.target.value)}
+                                        style={{ background: 'var(--bg-light)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px', fontSize: '11px', outline: 'none' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleGenerateAudit}
+                                disabled={isGeneratingAudit || !auditStartDate || !auditEndDate}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '30px',
+                                    background: (auditStartDate && auditEndDate) ? 'var(--krishi-green)' : 'rgba(255,255,255,0.1)',
+                                    color: (auditStartDate && auditEndDate) ? 'white' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    cursor: (auditStartDate && auditEndDate) ? 'pointer' : 'not-allowed',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: (auditStartDate && auditEndDate) ? '0 4px 12px rgba(34, 197, 94, 0.2)' : 'none',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {isGeneratingAudit ? (
+                                    <>
+                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                        Syncing Satellite &amp; IoT...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                        Generate Validation Audit / सत्यापन ऑडिट चलाएं
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    );
+                }
+
+                if (!stats.ready) {
+                    return (
+                        <div style={{
+                            padding: '20px',
+                            background: 'rgba(239, 68, 68, 0.05)',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(239, 68, 68, 0.15)',
+                            fontSize: '12px',
+                            color: '#ef4444',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px' }}></i>
+                            <span>{stats.message}</span>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Selector Tab for parameters */}
+                        <div style={{
+                            display: 'flex',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            padding: '4px',
+                            borderRadius: '10px',
+                            border: '1px solid var(--border-color)',
+                            gap: '4px'
+                        }}>
+                            <button
+                                onClick={() => setValidationParam('moisture')}
+                                style={{
+                                    flex: 1,
+                                    padding: '6px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    background: validationParam === 'moisture' ? 'var(--krishi-green)' : 'transparent',
+                                    color: validationParam === 'moisture' ? 'white' : 'var(--text-secondary)',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <i className="fa-solid fa-droplet" style={{ marginRight: '6px' }}></i>
+                                Soil Moisture Validation / मिट्टी की नमी सत्यापन
+                            </button>
+                            <button
+                                onClick={() => setValidationParam('temperature')}
+                                style={{
+                                    flex: 1,
+                                    padding: '6px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    background: validationParam === 'temperature' ? '#ef4444' : 'transparent',
+                                    color: validationParam === 'temperature' ? 'white' : 'var(--text-secondary)',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <i className="fa-solid fa-temperature-half" style={{ marginRight: '6px' }}></i>
+                                LST Temperature Validation / तापमान सत्यापन
+                            </button>
+                        </div>
+
+                        {/* Top Stats and Gauge row */}
+                        <div style={{
+                            padding: '16px',
+                            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.45) 100%)',
+                            borderRadius: '16px',
+                            border: '1px solid var(--border-color)',
+                            backdropFilter: 'blur(12px)',
+                            display: 'grid',
+                            gridTemplateColumns: '90px 1fr',
+                            gap: '20px',
+                            alignItems: 'center'
+                        }}>
+                            {/* Circular Radial Accuracy Gauge */}
+                            <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg style={{ transform: 'rotate(-90deg)', width: '90px', height: '90px' }}>
+                                    <circle cx="45" cy="45" r="36" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
+                                    <circle cx="45" cy="45" r="36" stroke={stats.integrityScore > 85 ? 'var(--krishi-green)' : stats.integrityScore > 70 ? '#eab308' : '#f97316'} strokeWidth="6" fill="transparent" 
+                                        strokeDasharray={2 * Math.PI * 36}
+                                        strokeDashoffset={(2 * Math.PI * 36) * (1 - stats.integrityScore / 100)} 
+                                        strokeLinecap="round"
+                                        style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+                                    />
+                                </svg>
+                                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>{stats.integrityScore.toFixed(0)}%</span>
+                                    <span style={{ fontSize: '7px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Accuracy / सटीकता</span>
+                                </div>
+                            </div>
+
+                            {/* Calibration details */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-main)' }}>
+                                        Calibration Audit Report / अंशांकन रिपोर्ट
+                                    </span>
+                                    <span style={{ 
+                                        fontSize: '9px', 
+                                        fontWeight: 700, 
+                                        padding: '3px 8px', 
+                                        borderRadius: '12px', 
+                                        background: stats.statusBadge.bg, 
+                                        color: stats.statusBadge.color 
+                                    }}>
+                                        {stats.statusBadge.text}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
+                                    <div>
+                                        <div style={{ color: 'var(--text-secondary)' }}>Pearson Correlation ($r$):</div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '12px' }}>{stats.correlation.toFixed(3)}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ color: 'var(--text-secondary)' }}>Average Deviation (MAD):</div>
+                                        <div style={{ fontWeight: 600, color: '#0ea5e9', fontSize: '12px' }}>
+                                            ±{stats.avgDeviation.toFixed(1)}{validationParam === 'moisture' ? '%' : '°C'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style={{ color: 'var(--text-secondary)' }}>Synced Records:</div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{stats.pairedCount} overlapping days</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ color: 'var(--text-secondary)' }}>Ground Avg vs Satellite:</div>
+                                        <div style={{ fontWeight: 600, color: 'var(--krishi-green)' }}>
+                                            {stats.iotAvg.toFixed(1)}{validationParam === 'moisture' ? '%' : '°C'} / {stats.satAvg.toFixed(1)}{validationParam === 'moisture' ? '%' : '°C'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Interactive Overlapping Chart */}
+                        <div style={{
+                            padding: '16px',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border-color)',
+                            height: '240px'
+                        }}>
+                            <Line data={getValidationChartData(stats)} options={validationChartOptions} />
+                        </div>
+
+                        {/* Sliders Calibration Adjustment Card */}
+                        <div style={{
+                            padding: '16px',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            borderRadius: '16px',
+                            border: '1px solid var(--border-color)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px'
+                        }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <i className="fa-solid fa-sliders" style={{ color: 'var(--krishi-green)' }}></i>
+                                Real-Time Telemetry Calibration Adjuster / वास्तविक समय अंशांकन
+                            </div>
+
+                            {validationParam === 'moisture' ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                        <span>Soil Moisture Calibration Offset (%):</span>
+                                        <span style={{ fontWeight: 'bold', color: 'var(--krishi-green)' }}>
+                                            {moistureOffset > 0 ? `+${moistureOffset}%` : `${moistureOffset}%`}
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="range"
+                                        min="-30"
+                                        max="30"
+                                        step="0.5"
+                                        value={moistureOffset}
+                                        onChange={(e) => setMoistureOffset(Number(e.target.value))}
+                                        style={{ accentColor: 'var(--krishi-green)', cursor: 'pointer', width: '100%' }}
+                                    />
+                                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                                        Drag to correct systematic dry/wet bias in ground probes. Recalculates stats instantly.
+                                    </span>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                        <span>Temperature Calibration Offset (°C):</span>
+                                        <span style={{ fontWeight: 'bold', color: '#ef4444' }}>
+                                            {tempOffset > 0 ? `+${tempOffset}°C` : `${tempOffset}°C`}
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="range"
+                                        min="-10"
+                                        max="10"
+                                        step="0.2"
+                                        value={tempOffset}
+                                        onChange={(e) => setTempOffset(Number(e.target.value))}
+                                        style={{ accentColor: '#ef4444', cursor: 'pointer', width: '100%' }}
+                                    />
+                                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                                        Drag to correct thermal ambient sensor systematic offset in real-time.
+                                    </span>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={handleSaveCalibration}
+                                disabled={isSavingCalibration}
+                                style={{
+                                    padding: '8px 16px',
+                                    background: 'var(--krishi-green)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    alignSelf: 'flex-start',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    transition: 'background 0.2s'
+                                }}
+                            >
+                                <i className="fa-solid fa-cloud-arrow-up"></i>
+                                {isSavingCalibration ? 'Persisting...' : 'Save Calibration Offset / अंशांकन सहेजें'}
+                            </button>
+                        </div>
+
+                        {/* AI Advisory / Diagnostics */}
+                        <div style={{
+                            padding: '16px',
+                            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(59, 130, 246, 0.04) 100%)',
+                            borderRadius: '16px',
+                            border: '1px solid rgba(16, 185, 129, 0.15)',
+                            fontSize: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                        }}>
+                            <div style={{ fontWeight: 700, color: '#0f766e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <i className="fa-solid fa-brain" style={{ color: '#14b8a6' }}></i>
+                                AI Agronomic Validation Advisory / कृषि-सहायक निदान
+                            </div>
+                            <div style={{ color: 'var(--text-secondary)', lineHeight: '1.5', fontSize: '11.5px' }}>
+                                {validationParam === 'moisture' ? (
+                                    <>
+                                        {Math.abs(stats.correlation) > 0.8 && stats.avgDeviation < 5 ? (
+                                            <span>
+                                                <strong>Perfect Congruence (पूर्ण सामंजस्य):</strong> Physical sensor is perfectly aligned with Google Earth Engine satellite soil moisture model ($r = {stats.correlation.toFixed(2)}$). No systematic offset detected. Sensor is clean, well-calibrated, and in optimal soil layer contact.
+                                            </span>
+                                        ) : Math.abs(stats.correlation) > 0.6 ? (
+                                            <span>
+                                                <strong>Moderate Alignment (सामान्य संरेखण):</strong> Moisture trends correlate well, but showing an offset deviation of ±{stats.avgDeviation.toFixed(1)}%. This suggests slight systematic bias. Applying the slider offset can enhance decision support modeling.
+                                            </span>
+                                        ) : (
+                                            <span>
+                                                <strong>Telemetry Anomaly / Drift (असंगति पाई गई):</strong> Low correlation ($r = {stats.correlation.toFixed(2)}$) and high deviation detected. This typically implies clay pockets surrounding the physical sensor, deep pooling, or sensor probe drift. Check physical installation and clean the probe contact.
+                                            </span>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        {stats.avgDeviation < 2.0 ? (
+                                            <span>
+                                                <strong>Excellent Calibration (उत्कृष्ट अंशांकन):</strong> Ambient temperature and Satellite LST display extremely high correlation ($r = {stats.correlation.toFixed(2)}$). Telemetry represents accurate environmental micro-climate conditions.
+                                            </span>
+                                        ) : (
+                                            <span>
+                                                <strong>Micro-Climate Offset (तापमान विचलन):</strong> Thermal deviation of ±{stats.avgDeviation.toFixed(1)}°C detected. This is consistent with dense foliage shading or placement close to hot metallic field objects. Consider adjusting ambient calibration offset.
+                                            </span>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* CONFIGURATION SETTINGS TAB */}
             {activeSection === 'config' && (
