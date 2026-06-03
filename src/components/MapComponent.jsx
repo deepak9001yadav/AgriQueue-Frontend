@@ -648,10 +648,23 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             map.removeLayer(overlayLayersRef.current[id]);
         }
 
-        const layer = L.tileLayer(url, {
-            tileSize: 256,
-            ...options
-        });
+        let layer;
+        if (options && options.bounds) {
+            const leafletBounds = [
+                [options.bounds[0], options.bounds[1]],
+                [options.bounds[2], options.bounds[3]]
+            ];
+            layer = L.imageOverlay(url, leafletBounds, {
+                opacity: options.opacity !== undefined ? options.opacity : 1,
+                zIndex: 1050,
+                crossOrigin: true
+            });
+        } else {
+            layer = L.tileLayer(url, {
+                tileSize: 256,
+                ...options
+            });
+        }
 
         layer.addTo(map);
         overlayLayersRef.current[id] = layer;

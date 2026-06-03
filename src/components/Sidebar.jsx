@@ -14,6 +14,7 @@ import img_etc from '../assets/img_etc.png';
 import img_weather from '../assets/img_weather.png';
 import { getLayerDisplayName } from '../utils/layerConstants';
 import DroneUploadSection from './DroneUploadSection';
+import DroneIcon from './DroneIcon';
 
 function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGenerateCalendar, onViewCalendar, onGenerateReport, onQueryCurrentLayer, onCompare }) {
     const {
@@ -35,7 +36,8 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         isGeneratingCalendar,
         isGeneratingReport,
         activeMapTab: activeTab,
-        setActiveMapTab: setActiveTab
+        setActiveMapTab: setActiveTab,
+        droneLayer
     } = useApp();
 
     const [uploadedLayers, setUploadedLayers] = useState([]);
@@ -54,6 +56,20 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         setManagedLayers([...managedLayers, newLayer]);
     };
 
+    const addDroneLayerToCompare = () => {
+        if (!droneLayer) return;
+        const newLayer = {
+            id: Date.now(),
+            url: droneLayer.imageUrl,
+            type: droneLayer.type === 'ndvi' ? 'drone_ndvi' : (droneLayer.type === 'lst' ? 'drone_lst' : 'drone'),
+            bounds: droneLayer.bounds,
+            stats: droneLayer.stats,
+            opacity: opacity,
+            visible: false
+        };
+        setManagedLayers([...managedLayers, newLayer]);
+    };
+
     const toggleManagedLayer = (id) => {
         const layer = managedLayers.find(l => l.id === id);
         if (!layer) return;
@@ -62,7 +78,10 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
             setManagedLayers(managedLayers.map(l => l.id === id ? { ...l, visible: false } : l));
         } else {
             if (window.mapFunctions?.addOverlayLayer) {
-                window.mapFunctions.addOverlayLayer(id, layer.url, { opacity: layer.opacity / 100 });
+                window.mapFunctions.addOverlayLayer(id, layer.url, { 
+                    opacity: layer.opacity / 100,
+                    bounds: layer.bounds
+                });
                 setManagedLayers(managedLayers.map(l => l.id === id ? { ...l, visible: true } : l));
             }
         }
@@ -168,7 +187,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
 
     const tabs = [
         { id: 'layers', icon: 'fa-layer-group', label: 'Layers' },
-        { id: 'drone', icon: 'fa-helicopter', label: 'Drone' },
+        { id: 'drone', icon: 'drone', label: 'Drone' },
         { id: 'draw', icon: 'fa-pen-to-square', label: 'Draw' },
         { id: 'compare', icon: 'fa-code-compare', label: 'Compare' },
         { id: 'clear', icon: 'fa-rotate-left', label: 'Clear' },
@@ -271,7 +290,11 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                         onClick={() => setActiveTab(tab.id)}
                         title={tab.label}
                     >
-                        <i className={`fa-solid ${tab.icon}`}></i>
+                        {tab.icon === 'drone' ? (
+                            <DroneIcon size={18} style={{ marginBottom: '4px' }} />
+                        ) : (
+                            <i className={`fa-solid ${tab.icon}`}></i>
+                        )}
                         <span>{tab.label}</span>
                     </button>
                 ))}
@@ -447,6 +470,12 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                         <button onClick={addToManagedLayers} className="btn" style={{ width: '100%', marginBottom: '12px', fontSize: '12px', padding: '9px 12px' }}>
                             <i className="fa-solid fa-plus"></i> Add Current Layer
                         </button>
+
+                        {droneLayer && (
+                            <button onClick={addDroneLayerToCompare} className="btn" style={{ width: '100%', marginBottom: '12px', fontSize: '12px', padding: '9px 12px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white' }}>
+                                <DroneIcon size={14} style={{ marginRight: '6px', display: 'inline-block', verticalAlign: 'text-bottom' }} /> Add Drone Layer ({droneLayer.type.toUpperCase()})
+                            </button>
+                        )}
 
                         {managedLayers.length === 0 ? (
                             <div className="sb2-empty-state">

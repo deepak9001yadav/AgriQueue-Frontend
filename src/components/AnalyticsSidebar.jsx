@@ -19,6 +19,7 @@ import { useApp } from '../context/AppContext';
 import { t } from '../utils/translations';
 import { fetchLandCoverAnalysis } from '../utils/api';
 import Swal from 'sweetalert2';
+import DroneIcon from './DroneIcon';
 
 // Register Chart.js components
 ChartJS.register(
@@ -682,7 +683,7 @@ function AnalyticsSidebar() {
                     {toggleBtn}
                     {resizerEl}
                     <div className="analytics-sidebar-inner" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        <i className="fa-solid fa-helicopter fa-3x" style={{ color: 'var(--krishi-green)', marginBottom: '15px', opacity: 0.5 }}></i>
+                        <DroneIcon size={48} style={{ color: 'var(--krishi-green)', marginBottom: '15px', opacity: 0.5 }} />
                         <h4>No Drone Data</h4>
                         <p style={{ fontSize: '12px' }}>Please upload a GeoTIFF image in the Drone tab to view analytics.</p>
                     </div>
@@ -717,8 +718,8 @@ function AnalyticsSidebar() {
                 {resizerEl}
                 <div className="analytics-sidebar-inner" style={{ padding: '16px', height: '100%', overflowY: 'auto' }}>
                     <div style={{ textAlign: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
-                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--krishi-green)' }}>
-                            <i className="fa-solid fa-helicopter" style={{ marginRight: '8px' }}></i>
+                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--krishi-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <DroneIcon size={18} />
                             {title}
                         </h3>
                     </div>

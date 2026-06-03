@@ -947,12 +947,21 @@ function AppContent() {
 
   // Getter for Sidebar
   const getCurrentLayerInfo = useCallback(() => {
+    if (activeMapTab === 'drone' && droneLayer) {
+      return {
+        url: droneLayer.imageUrl,
+        type: droneLayer.type === 'ndvi' ? 'drone_ndvi' : (droneLayer.type === 'lst' ? 'drone_lst' : 'drone'),
+        bounds: droneLayer.bounds,
+        stats: droneLayer.stats,
+        opacity: opacity
+      };
+    }
     if (!currentTileDataRef.current) return null;
     return {
       ...currentTileDataRef.current,
       opacity: opacity
     };
-  }, [opacity]);
+  }, [opacity, activeMapTab, droneLayer]);
 
   // Handle comparison view
   const handleCompare = useCallback((selectedLayers) => {

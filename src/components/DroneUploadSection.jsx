@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { uploadDrone } from '../utils/api';
 import Swal from 'sweetalert2';
+import DroneIcon from './DroneIcon';
 
 export default function DroneUploadSection() {
     const { droneLayer, setDroneLayer, setOpacity } = useApp();
@@ -100,8 +101,8 @@ export default function DroneUploadSection() {
 
     return (
         <div className="sb2-panel drone-upload-panel">
-            <div className="sb2-section-label">
-                <i className="fa-solid fa-helicopter"></i> Drone Data Induction
+            <div className="sb2-section-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <DroneIcon size={16} /> Drone Data Induction
             </div>
             
             {!droneLayer ? (

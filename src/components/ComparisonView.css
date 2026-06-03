@@ -294,3 +294,55 @@ body.dark-mode .legend-labels {
 body.dark-mode .opacity-slider-container label {
     color: #e0e0e0;
 }
+
+/* Pane specific loader overlay */
+.pane-loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.pane-loader-content {
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 18px 24px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.pane-loader-content i {
+    font-size: 28px;
+    color: #10b981;
+}
+
+.pane-loader-content span {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.pane-loader-content .loader-subtext {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: -4px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

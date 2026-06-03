@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './ComparisonView.css';
-import { fetchGeeTile } from '../utils/api';
+import { fetchGeeTile, fetchVraMap } from '../utils/api';
 import { t } from '../utils/translations';
 import { useApp } from '../context/AppContext';
 
@@ -284,6 +284,7 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
     const containerRef = useRef(null);
     const [paneConfigs, setPaneConfigs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [paneLoadings, setPaneLoadings] = useState({});
 
     // Initialize state from props
     useEffect(() => {
@@ -348,16 +349,27 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
                 subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
             }).addTo(compMap);
 
-            // Fit Bounds
+            // Fit Bounds & Draw AOI Outline
             if (drawnAOI) {
-                const bounds = L.geoJSON(drawnAOI).getBounds();
-                compMap.fitBounds(bounds);
+                const aoiLayer = L.geoJSON(drawnAOI, {
+                    style: {
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 0,
+                        opacity: 0.8
+                    }
+                });
+                aoiLayer.addTo(compMap);
+                const bounds = aoiLayer.getBounds();
+                if (bounds.isValid()) {
+                    compMap.fitBounds(bounds, { padding: [10, 10] });
+                }
             } else {
                 compMap.setView([20.59, 78.96], 5);
             }
 
             // Load Layer
-            await updateOneMapLayer(compMap, config);
+            await updateOneMapLayer(compMap, config, index);
 
             // Invalidate size
             setTimeout(() => {
@@ -377,7 +389,7 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
         setIsLoading(false);
     };
 
-    const updateOneMapLayer = async (mapInst, config) => {
+    const updateOneMapLayer = async (mapInst, config, index) => {
         if (!mapInst || !config) return;
 
         // Remove existing overlay if any
@@ -388,12 +400,14 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
 
         // Handle Drone Layer as ImageOverlay
         if (config.type && config.type.startsWith('drone')) {
-            if (droneLayer && droneLayer.imageUrl && droneLayer.bounds) {
+            const imageUrl = config.url || (droneLayer && droneLayer.imageUrl);
+            const bounds = config.bounds || (droneLayer && droneLayer.bounds);
+            if (imageUrl && bounds) {
                 const leafletBounds = [
-                    [droneLayer.bounds[0], droneLayer.bounds[1]],
-                    [droneLayer.bounds[2], droneLayer.bounds[3]]
+                    [bounds[0], bounds[1]],
+                    [bounds[2], bounds[3]]
                 ];
-                const layer = L.imageOverlay(droneLayer.imageUrl, leafletBounds, {
+                const layer = L.imageOverlay(imageUrl, leafletBounds, {
                     opacity: config.opacity / 100,
                     zIndex: 1050,
                     crossOrigin: true
@@ -413,6 +427,9 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
 
         // If no URL (or changed parameters require new fetch), fetch it
         if (!url) {
+            if (index !== undefined) {
+                setPaneLoadings(prev => ({ ...prev, [index]: true }));
+            }
             try {
                 // Determine VRA or GEE fetch
                 let tileData;
@@ -424,9 +441,18 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
                 }
                 if (tileData.error) throw new Error(tileData.error);
                 url = tileData.urlFormat;
+
+                // Save URL back into config so it caches
+                if (index !== undefined) {
+                    setPaneConfigs(prev => prev.map((c, idx) => idx === index ? { ...c, url: tileData.urlFormat } : c));
+                }
             } catch (err) {
                 console.error("Comparison load error:", err);
                 return; // Fail gracefully
+            } finally {
+                if (index !== undefined) {
+                    setPaneLoadings(prev => ({ ...prev, [index]: false }));
+                }
             }
         }
 
@@ -464,7 +490,7 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
                     mapInst._overlayLayer.setOpacity(updates.opacity / 100);
                 }
             } else {
-                await updateOneMapLayer(mapInst, newConfigs[index]);
+                await updateOneMapLayer(mapInst, newConfigs[index], index);
             }
         }
     };
@@ -516,6 +542,16 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
                 {paneConfigs.map((config, index) => (
                     <div key={index} className="comparison-pane">
                         <div id={`comp-map-${index}`} className="comparison-map-container"></div>
+
+                        {paneLoadings[index] && (
+                            <div className="pane-loader-overlay">
+                                <div className="pane-loader-content">
+                                    <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                    <span>Fetching {LAYER_OPTIONS.find(o => o.value === config.type)?.label || 'Layer'} Data...</span>
+                                    <div className="loader-subtext">Estimated time: 3-5 seconds</div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Interactive Control Panel */}
                         <div className="comparison-panel-overlay">
