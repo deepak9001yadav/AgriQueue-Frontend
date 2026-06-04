@@ -210,10 +210,18 @@ function AppContent() {
     }
   }, [activeModule]);
 
+  const hasLoadedFieldRef = useRef(false);
+
+  // Reset loader flag when fieldId changes
+  useEffect(() => {
+    hasLoadedFieldRef.current = false;
+  }, [fieldId]);
+
   // Load field from URL if present - Optimized with Cache First
   useEffect(() => {
     async function loadField() {
-      if (!fieldId || drawnAOI) return;
+      if (!fieldId || hasLoadedFieldRef.current) return;
+      hasLoadedFieldRef.current = true;
 
       // STEP 1: Pehle localStorage se instant load karo (Zero Delay)
       const localFieldsRaw = localStorage.getItem('fields');
@@ -224,12 +232,14 @@ function AppContent() {
           const localFields = JSON.parse(localFieldsRaw);
           const field = localFields.find(f => f.id.toString() === fieldId);
           if (field) {
-            console.log('Cache Hit: Loading field instantly from local storage');
-            setDrawnAOI({
-              type: 'Feature',
-              geometry: field.geometry,
-              properties: { name: field.name, type: field.type }
-            });
+            if (field.geometry && Object.keys(field.geometry).length > 0) {
+              console.log('Cache Hit: Loading field instantly from local storage');
+              setDrawnAOI({
+                type: 'Feature',
+                geometry: field.geometry,
+                properties: { name: field.name, type: field.type }
+              });
+            }
             foundInCache = true;
           }
         } catch (e) {
@@ -256,12 +266,14 @@ function AppContent() {
         const field = fields.find(f => f.id.toString() === fieldId);
 
         if (field) {
-          console.log('Backend Success: Updating field data');
-          setDrawnAOI({
-            type: 'Feature',
-            geometry: field.geometry,
-            properties: { name: field.name, type: field.type }
-          });
+          if (field.geometry && Object.keys(field.geometry).length > 0) {
+            console.log('Backend Success: Updating field data');
+            setDrawnAOI({
+              type: 'Feature',
+              geometry: field.geometry,
+              properties: { name: field.name, type: field.type }
+            });
+          }
           if (loadingSwal) Swal.close();
         } else if (!foundInCache) {
           // Agar na cache mein hai na backend mein, tab error dikhao
@@ -285,7 +297,7 @@ function AppContent() {
       }
     }
     loadField();
-  }, [fieldId, drawnAOI, setDrawnAOI]);
+  }, [fieldId, setDrawnAOI]);
 
   // Handle direct navigation to IoT tab via URL searchParams (e.g. ?field_id=62&tab=iot)
   useEffect(() => {
@@ -699,7 +711,7 @@ function AppContent() {
   }, [drawnAOI, startDate, endDate, opacity, setLoadingState, notify, removeNotification, selectedImageryDate]);
 
   const handleClearMap = useCallback(() => {
-    clearAllData();
+    clearAllData(true);
     setCurrentLayerType(null);
     setLayerStats(null);
     setShowCalendar(false);

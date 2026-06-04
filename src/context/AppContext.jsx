@@ -117,8 +117,10 @@ export function AppProvider({ children }) {
     }, []);
 
     // Clear all data
-    const clearAllData = useCallback(() => {
-        setDrawnAOI(null);
+    const clearAllData = useCallback((keepAOI = false) => {
+        if (!keepAOI) {
+            setDrawnAOI(null);
+        }
         setCurrentLayer(null);
         setCurrentLayerData(null);
         setFullChartData(null);

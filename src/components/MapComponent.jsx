@@ -537,7 +537,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     };
 
     // Delete shapes - FIXED to properly remove AOI
-    const handleDeleteShapes = () => {
+    const handleDeleteShapes = async () => {
         polygonDrawerRef.current?.disable();
         rectangleDrawerRef.current?.disable();
         editorRef.current?.disable();
@@ -549,14 +549,80 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             if (onAOICreated) {
                 onAOICreated(null);  // Notify parent that AOI was removed
             }
-            Swal.fire({
-                icon: 'success',
-                title: t('opt_shape_deleted'),
-                text: t('opt_shape_removed_map'),
-                confirmButtonColor: 'var(--krishi-green)',
-                timer: 2000,
-                showConfirmButton: false,
-            });
+            clearAllLayers(); // Clear all other layers as delete button erases both AOI and layers
+
+            if (fieldId) {
+                try {
+                    // Update localStorage
+                    const storedFields = JSON.parse(localStorage.getItem('fields') || '[]');
+                    const fieldIndex = storedFields.findIndex(f => f.id.toString() === fieldId.toString());
+
+                    if (fieldIndex !== -1) {
+                        storedFields[fieldIndex].geometry = null;
+                        storedFields[fieldIndex].areaHectares = 0;
+                        localStorage.setItem('fields', JSON.stringify(storedFields));
+                        console.log('✅ Field AOI cleared in localStorage:', fieldId);
+                    }
+
+                    // Update backend database
+                    try {
+                        const auth = getAuth();
+                        const user = auth.currentUser;
+
+                        if (user) {
+                            const token = await user.getIdToken();
+                            const response = await fetch(`/api/update_field/${fieldId}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    geometry: null,
+                                    area_hectares: 0
+                                })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            console.log('✅ Field AOI cleared in backend:', fieldId);
+                        } else {
+                            console.error("User not logged in, cannot delete AOI in backend");
+                        }
+                    } catch (backendErr) {
+                        console.error('Backend delete field geometry failed:', backendErr);
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: t('opt_shape_deleted'),
+                        text: t('opt_shape_removed_map'),
+                        confirmButtonColor: 'var(--krishi-green)',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                } catch (err) {
+                    console.error('Error clearing field geometry:', err);
+                    Swal.fire({
+                        icon: 'warning',
+                        title: t('opt_shape_deleted'),
+                        text: 'Cleared from current session. Could not persist to backend.',
+                        confirmButtonColor: 'var(--krishi-green)',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                }
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: t('opt_shape_deleted'),
+                    text: t('opt_shape_removed_map'),
+                    confirmButtonColor: 'var(--krishi-green)',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            }
         } else {
             Swal.fire({
                 icon: 'info',
@@ -619,12 +685,6 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         });
         overlayLayersRef.current = {};
 
-        // Clear drawn items
-        if (drawnItemsRef.current) {
-            drawnItemsRef.current.clearLayers();
-            setDrawnAOI(null); // This clears the React state for AOI
-        }
-
         // Remove search marker
         if (currentSearchMarkerRef.current) {
             map.removeLayer(currentSearchMarkerRef.current);
@@ -636,7 +696,7 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             map.removeLayer(droneOverlayRef.current);
             droneOverlayRef.current = null;
         }
-    }, [setCurrentLayer, setDrawnAOI]);
+    }, [setCurrentLayer]);
 
     // Add Overlay Layer
     const addOverlayLayer = useCallback((id, url, options) => {
