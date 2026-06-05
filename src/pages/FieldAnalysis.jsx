@@ -305,13 +305,8 @@ function AppContent() {
     if (tabParam === 'iot') {
       setActiveModule('iot');
       setActiveChartParam('iot');
-
-      // Clear the tab parameter from URL so it doesn't lock the state on subsequent renders
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('tab');
-      setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, setActiveModule, setActiveChartParam]);
+  }, [searchParams, setActiveModule, setActiveChartParam]);
 
   // Handle location select from header search
   const handleLocationSelectSetup = useCallback((centerFunction) => {

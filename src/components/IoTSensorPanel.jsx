@@ -204,7 +204,6 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         Swal.fire({
             title: 'Initiating Calibration Audit...',
-            html: 'Connecting to Google Earth Engine satellite models & syncing live Ground IoT sensor feeds...',
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -263,7 +262,6 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         Swal.fire({
             title: 'Saving Calibration Offset...',
-            text: 'Writing virtual offsets to database configuration and re-executing data cleaning pipeline...',
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -463,7 +461,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 window.mapFunctions.hideIoTMarker();
             }
         };
-    }, [fieldId, interval]);
+    }, [fieldId, interval, activeSection]);
 
     // Cleanup IoT Marker from Map on leaving or unmounting IoT tab
     useEffect(() => {
@@ -558,9 +556,6 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         Swal.fire({
             title: isHistory ? 'Fetching History...' : 'Syncing Data...',
-            html: isHistory 
-                ? `Connecting to ThingSpeak to fetch historical data from ${forceStart} to ${forceEnd} and running cleaning algorithms...`
-                : 'Connecting to servers and executing data cleaning algorithms...',
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -662,7 +657,6 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
         Swal.fire({
             title: 'Verifying Channel Connection...',
-            text: 'Validating Channel access and mappings...',
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -1222,36 +1216,86 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         const stats = validationStats;
                         if (!stats) {
                             return (
-                                <div style={{
-                                    padding: '14px',
-                                    background: 'rgba(255, 255, 255, 0.02)',
-                                    borderRadius: '12px',
-                                    border: '1px dashed var(--border-color)',
-                                    fontSize: '11px',
-                                    color: 'var(--text-secondary)',
-                                    textAlign: 'center'
-                                }}>
-                                    <i className="fa-solid fa-satellite-dish" style={{ color: '#0ea5e9', marginRight: '6px', fontSize: '14px' }}></i>
-                                    Pro Tip: To run Cross-Sensor Validation, select the Date Range and click **Fetch Data** on the left map toolbar to align GEE Satellite with local ground telemetry.
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{
+                                        padding: '14px',
+                                        background: 'rgba(255, 255, 255, 0.02)',
+                                        borderRadius: '12px',
+                                        border: '1px dashed var(--border-color)',
+                                        fontSize: '11px',
+                                        color: 'var(--text-secondary)',
+                                        textAlign: 'center'
+                                    }}>
+                                        <i className="fa-solid fa-satellite-dish" style={{ color: '#0ea5e9', marginRight: '6px', fontSize: '14px' }}></i>
+                                        Pro Tip: To run Cross-Sensor Validation, click the button below to align GEE Satellite with local ground telemetry.
+                                    </div>
+                                    <button 
+                                        onClick={handleGenerateAudit}
+                                        disabled={isGeneratingAudit}
+                                        style={{
+                                            padding: '10px',
+                                            background: 'var(--krishi-green, #00c853)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontWeight: 600,
+                                            fontSize: '12px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px',
+                                            boxShadow: '0 2px 4px rgba(0, 200, 83, 0.2)',
+                                            transition: 'opacity 0.2s'
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                        {isGeneratingAudit ? 'Running Audit...' : 'Run Calibration Audit'}
+                                    </button>
                                 </div>
                             );
                         }
 
                         if (!stats.ready) {
                             return (
-                                <div style={{
-                                    padding: '14px',
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    borderRadius: '12px',
-                                    border: '1px solid var(--border-color)',
-                                    fontSize: '11px',
-                                    color: 'var(--text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                }}>
-                                    <i className="fa-solid fa-satellite-dish" style={{ color: '#eab308', fontSize: '14px' }}></i>
-                                    <span>{stats.message}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{
+                                        padding: '14px',
+                                        background: 'rgba(255, 255, 255, 0.03)',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-color)',
+                                        fontSize: '11px',
+                                        color: 'var(--text-secondary)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}>
+                                        <i className="fa-solid fa-satellite-dish" style={{ color: '#eab308', fontSize: '14px' }}></i>
+                                        <span>{stats.message}</span>
+                                    </div>
+                                    <button 
+                                        onClick={handleGenerateAudit}
+                                        disabled={isGeneratingAudit}
+                                        style={{
+                                            padding: '10px',
+                                            background: 'var(--krishi-green, #00c853)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontWeight: 600,
+                                            fontSize: '12px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px',
+                                            boxShadow: '0 2px 4px rgba(0, 200, 83, 0.2)',
+                                            transition: 'opacity 0.2s'
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                        {isGeneratingAudit ? 'Running Audit...' : 'Run Calibration Audit'}
+                                    </button>
                                 </div>
                             );
                         }
