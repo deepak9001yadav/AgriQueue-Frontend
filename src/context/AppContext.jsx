@@ -14,8 +14,30 @@ export function AppProvider({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(false); // Initially closed on load
     
-    // Module switching (satellite / iot)
-    const [activeModule, setActiveModule] = useState('satellite');
+    // Module switching (satellite / iot) with persistence on refresh
+    const getInitialModule = () => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab === 'satellite' || tab === 'iot') {
+            return tab;
+        }
+        const saved = localStorage.getItem('activeModule');
+        if (saved === 'satellite' || saved === 'iot') {
+            return saved;
+        }
+        return 'satellite';
+    };
+
+    const [activeModule, setActiveModuleState] = useState(getInitialModule);
+    
+    const setActiveModule = useCallback((module) => {
+        localStorage.setItem('activeModule', module);
+        const params = new URLSearchParams(window.location.search);
+        params.set('tab', module);
+        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        setActiveModuleState(module);
+    }, []);
+
     const [activeMapTab, setActiveMapTab] = useState('layers');
 
     // Data states
