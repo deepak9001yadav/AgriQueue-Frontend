@@ -1229,9 +1229,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             Data Cleaning Pipeline Auditor
                         </div>
 
-                        {sensorData && sensorData.some(d => d.is_cleaned) ? (
+                        {sensorData && sensorData.some(d => d.is_cleaned && d.cleaning_logs && Object.keys(d.cleaning_logs).length > 0) ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
-                                {sensorData.slice().reverse().filter(d => d.is_cleaned).map((d, index) => (
+                                {sensorData.slice().reverse().filter(d => d.is_cleaned && d.cleaning_logs && Object.keys(d.cleaning_logs).length > 0).map((d, index) => (
                                     <div key={index} style={{
                                         padding: '8px 10px',
                                         background: 'rgba(239, 68, 68, 0.04)',
