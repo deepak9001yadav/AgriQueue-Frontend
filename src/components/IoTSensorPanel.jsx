@@ -1216,55 +1216,6 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         )}
                     </div>
 
-                    {/* Live Data Cleaning Pipeline Auditor */}
-                    <div style={{
-                        padding: '14px',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderRadius: '12px',
-                        border: '1px solid var(--border-color)',
-                        fontSize: '12px'
-                    }}>
-                        <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <i className="fa-solid fa-wand-magic-sparkles" style={{ color: '#a855f7' }}></i>
-                            Data Cleaning Pipeline Auditor
-                        </div>
-
-                        {sensorData && sensorData.some(d => d.is_cleaned && d.cleaning_logs && Object.keys(d.cleaning_logs).length > 0) ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
-                                {sensorData.slice().reverse().filter(d => d.is_cleaned && d.cleaning_logs && Object.keys(d.cleaning_logs).length > 0).map((d, index) => (
-                                    <div key={index} style={{
-                                        padding: '8px 10px',
-                                        background: 'rgba(239, 68, 68, 0.04)',
-                                        borderRadius: '8px',
-                                        borderLeft: '3px solid #f97316',
-                                        fontSize: '11px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '2px'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
-                                            <span>Telemetry Adjustments</span>
-                                            <span>{new Date(d.timestamp).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) + ' IST'}</span>
-                                        </div>
-                                        {Object.entries(d.cleaning_logs || {}).map(([metric, logText]) => (
-                                            <div key={metric} style={{ color: '#f97316', fontWeight: 500 }}>
-                                                <strong>{metric.replace('_', ' ')}:</strong> {logText}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : sensorData.length > 0 ? (
-                            <div style={{ color: '#22c55e', fontSize: '11px', padding: '6px', background: 'rgba(34, 197, 94, 0.05)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <i className="fa-solid fa-circle-check"></i>
-                                All cached telemetry verified. No anomalies, outliers, or missing registers detected.
-                            </div>
-                        ) : (
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '11px', textAlign: 'center' }}>
-                                No telemetry data loaded yet.
-                            </div>
-                        )}
-                    </div>
 
                     {/* 🛰️ Cross-Sensor Validation & Calibration Auditor */}
                     {(() => {
