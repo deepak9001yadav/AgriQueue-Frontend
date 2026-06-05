@@ -299,12 +299,14 @@ function AppContent() {
     loadField();
   }, [fieldId, setDrawnAOI]);
 
-  // Handle direct navigation to IoT tab via URL searchParams (e.g. ?field_id=62&tab=iot)
+  // Handle direct navigation to tabs via URL searchParams (e.g. ?field_id=62&tab=iot)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'iot') {
       setActiveModule('iot');
       setActiveChartParam('iot');
+    } else if (tabParam === 'satellite') {
+      setActiveModule('satellite');
     }
   }, [searchParams, setActiveModule, setActiveChartParam]);
 

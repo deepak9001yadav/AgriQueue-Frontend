@@ -190,7 +190,7 @@ function Dashboard() {
 
                 // Click to navigate
                 layer.on('click', () => {
-                    navigate(`/app?field_id=${field.id}`);
+                    navigate(`/app?field_id=${field.id}&tab=satellite`);
                 });
 
                 // Draw Label Marker
@@ -211,7 +211,7 @@ function Dashboard() {
                 });
 
                 marker.on('click', () => {
-                    navigate(`/app?field_id=${field.id}`);
+                    navigate(`/app?field_id=${field.id}&tab=satellite`);
                 });
 
                 layerGroup.addLayer(marker);
@@ -819,7 +819,7 @@ function Dashboard() {
                         timer: 2000
                     });
 
-                    navigate(`/app?field_id=${newField.id}`);
+                    navigate(`/app?field_id=${newField.id}&tab=satellite`);
                 }
 
             } catch (err) {

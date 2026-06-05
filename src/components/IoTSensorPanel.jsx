@@ -67,6 +67,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
     // Data and Sync state
     const [sensorData, setSensorData] = useState([]);
+    const [validationSensorData, setValidationSensorData] = useState(null);
     const [latestReading, setLatestReading] = useState(null);
     const [syncStats, setSyncStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -85,13 +86,14 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
     // Helper to calculate cross-sensor validation stats with dynamic offset adjustments
     const calculateValidationStats = (localSMOffset = moistureOffset, localTempOffset = tempOffset) => {
-        if (!chartData || chartData.length === 0 || !sensorData || sensorData.length === 0) {
+        const activeData = validationSensorData || sensorData;
+        if (!chartData || chartData.length === 0 || !activeData || activeData.length === 0) {
             return null;
         }
 
         // 1. Group IoT sensor data by date (YYYY-MM-DD)
         const iotDaily = {};
-        sensorData.forEach(d => {
+        activeData.forEach(d => {
             if (!d.timestamp) return;
             const dateStr = d.timestamp.split('T')[0];
             if (!iotDaily[dateStr]) {
@@ -214,7 +216,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
             // 1. Sync live physical IoT telemetry
             const syncRes = await getIoTData(fieldId, true, start, end);
             if (syncRes.data) {
-                setSensorData(syncRes.data);
+                setValidationSensorData(syncRes.data);
             }
 
             // 2. Fetch GEE Satellite telemetry
@@ -452,6 +454,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
     useEffect(() => {
         isMountedRef.current = true;
         if (fieldId) {
+            setValidationSensorData(null); // Reset cached validation data when field changes
             fetchConfigAndData();
         }
 
@@ -461,7 +464,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 window.mapFunctions.hideIoTMarker();
             }
         };
-    }, [fieldId, interval, activeSection]);
+    }, [fieldId, interval]);
 
     // Cleanup IoT Marker from Map on leaving or unmounting IoT tab
     useEffect(() => {
@@ -760,7 +763,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
 
     const validationStats = useMemo(() => {
         return calculateValidationStats(moistureOffset, tempOffset);
-    }, [sensorData, chartData, moistureOffset, tempOffset, validationParam]);
+    }, [sensorData, validationSensorData, chartData, moistureOffset, tempOffset, validationParam]);
 
     const chartOptions = {
         responsive: true,
@@ -1488,9 +1491,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                     return (
                         <div style={{
                             padding: '24px',
-                            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.45) 100%)',
+                            background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(59, 130, 246, 0.04) 100%)',
                             borderRadius: '20px',
-                            border: '1px solid var(--border-color)',
+                            border: '1px solid rgba(14, 165, 233, 0.15)',
                             backdropFilter: 'blur(16px)',
                             textAlign: 'center',
                             display: 'flex',
@@ -1589,24 +1592,179 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                 if (!stats.ready) {
                     return (
                         <div style={{
-                            padding: '20px',
-                            background: 'rgba(239, 68, 68, 0.05)',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(239, 68, 68, 0.15)',
-                            fontSize: '12px',
-                            color: '#ef4444',
+                            padding: '24px',
+                            background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(59, 130, 246, 0.04) 100%)',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(14, 165, 233, 0.15)',
+                            backdropFilter: 'blur(16px)',
+                            textAlign: 'center',
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px'
+                            flexDirection: 'column',
+                            gap: '16px',
+                            alignItems: 'center'
                         }}>
-                            <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px' }}></i>
-                            <span>{stats.message}</span>
+                            <div style={{
+                                padding: '16px',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                fontSize: '12px',
+                                color: '#f87171',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                width: '100%',
+                                maxWidth: '320px',
+                                textAlign: 'left'
+                            }}>
+                                <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px', color: '#ef4444' }}></i>
+                                <span>{stats.message}</span>
+                            </div>
+
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', maxWidth: '320px' }}>
+                                Please select a different date range to perform cross-sensor calibration / अंशांकन के लिए अलग तिथि सीमा चुनें:
+                            </p>
+
+                            <div style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '10px', 
+                                width: '100%', 
+                                maxWidth: '320px', 
+                                background: 'rgba(255, 255, 255, 0.02)',
+                                padding: '16px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>From / शुरू की तारीख:</label>
+                                    <input 
+                                        type="date" 
+                                        value={auditStartDate} 
+                                        onChange={(e) => setAuditStartDate(e.target.value)}
+                                        style={{ background: 'var(--bg-light)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px', fontSize: '11px', outline: 'none' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>To / समाप्त की तारीख:</label>
+                                    <input 
+                                        type="date" 
+                                        value={auditEndDate} 
+                                        onChange={(e) => setAuditEndDate(e.target.value)}
+                                        style={{ background: 'var(--bg-light)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-main)', padding: '6px 10px', fontSize: '11px', outline: 'none' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleGenerateAudit}
+                                disabled={isGeneratingAudit || !auditStartDate || !auditEndDate}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '30px',
+                                    background: (auditStartDate && auditEndDate) ? 'var(--krishi-green)' : 'rgba(255,255,255,0.1)',
+                                    color: (auditStartDate && auditEndDate) ? 'white' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    cursor: (auditStartDate && auditEndDate) ? 'pointer' : 'not-allowed',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: (auditStartDate && auditEndDate) ? '0 4px 12px rgba(34, 197, 94, 0.2)' : 'none',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {isGeneratingAudit ? (
+                                    <>
+                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                        Syncing Satellite &amp; IoT...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                        Retry Validation Audit / सत्यापन ऑडिट फिर चलाएं
+                                    </>
+                                )}
+                            </button>
                         </div>
                     );
                 }
 
                 return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Quick Date Range Re-run Auditor Control */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            padding: '10px 16px',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border-color)',
+                            gap: '12px',
+                            flexWrap: 'wrap'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                <i className="fa-solid fa-calendar-days" style={{ color: 'var(--krishi-green)' }}></i>
+                                <span>Change Audit Period / ऑडिट अवधि बदलें:</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input 
+                                    type="date" 
+                                    value={auditStartDate} 
+                                    onChange={(e) => setAuditStartDate(e.target.value)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '6px',
+                                        color: 'var(--text-main)',
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        outline: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>to</span>
+                                <input 
+                                    type="date" 
+                                    value={auditEndDate} 
+                                    onChange={(e) => setAuditEndDate(e.target.value)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '6px',
+                                        color: 'var(--text-main)',
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        outline: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                                <button
+                                    onClick={handleGenerateAudit}
+                                    disabled={isGeneratingAudit || !auditStartDate || !auditEndDate}
+                                    style={{
+                                        padding: '5px 12px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        background: (auditStartDate && auditEndDate) ? 'var(--krishi-green)' : 'rgba(255, 255, 255, 0.1)',
+                                        color: (auditStartDate && auditEndDate) ? 'white' : 'var(--text-secondary)',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        cursor: (auditStartDate && auditEndDate) ? 'pointer' : 'not-allowed',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <i className="fa-solid fa-arrows-rotate"></i>
+                                    {isGeneratingAudit ? 'Auditing...' : 'Run Audit'}
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Selector Tab for parameters */}
                         <div style={{
                             display: 'flex',
@@ -1657,9 +1815,9 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                         {/* Top Stats and Gauge row */}
                         <div style={{
                             padding: '16px',
-                            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.45) 100%)',
+                            background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(59, 130, 246, 0.04) 100%)',
                             borderRadius: '16px',
-                            border: '1px solid var(--border-color)',
+                            border: '1px solid rgba(14, 165, 233, 0.15)',
                             backdropFilter: 'blur(12px)',
                             display: 'grid',
                             gridTemplateColumns: '90px 1fr',
@@ -1669,7 +1827,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             {/* Circular Radial Accuracy Gauge */}
                             <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <svg style={{ transform: 'rotate(-90deg)', width: '90px', height: '90px' }}>
-                                    <circle cx="45" cy="45" r="36" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
+                                    <circle cx="45" cy="45" r="36" stroke="rgba(14, 165, 233, 0.1)" strokeWidth="6" fill="transparent" />
                                     <circle cx="45" cy="45" r="36" stroke={stats.integrityScore > 85 ? 'var(--krishi-green)' : stats.integrityScore > 70 ? '#eab308' : '#f97316'} strokeWidth="6" fill="transparent" 
                                         strokeDasharray={2 * Math.PI * 36}
                                         strokeDashoffset={(2 * Math.PI * 36) * (1 - stats.integrityScore / 100)} 

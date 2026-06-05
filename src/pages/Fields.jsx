@@ -127,7 +127,7 @@ function Fields() {
     };
 
     const handleFieldClick = (field) => {
-        navigate(`/app?field_id=${field.id}`);
+        navigate(`/app?field_id=${field.id}&tab=satellite`);
     };
     const handleEditField = async (e, field) => {
         // CRITICAL: Stop ALL event propagation
