@@ -128,14 +128,15 @@ const layerLegends = {
         ],
     },
     vra_cwsi: {
-        title: 'Water Stress Zones',
+        title: 'CWSI Zones (Water Stress)',
+        unit: '',
         items: [
-            { color: '#E57373', label: 'Severe Stress' },
-            { color: '#FFB74D', label: 'High Stress' },
-            { color: '#FFF176', label: 'Moderate' },
-            { color: '#81D4FA', label: 'Low Stress' },
-            { color: '#29B6F6', label: 'No Stress' },
-        ],
+            { color: '#d7191c', label: 'Severe (Zone 5)' },
+            { color: '#fdae61', label: 'High (Zone 4)' },
+            { color: '#ffffbf', label: 'Moderate (Zone 3)' },
+            { color: '#a6d96a', label: 'Low (Zone 2)' },
+            { color: '#1a9641', label: 'No Stress (Zone 1)' },
+        ]
     },
     vra_irrigation_need: {
         title: 'Irrigation Need Zones',
@@ -178,14 +179,15 @@ const layerLegends = {
         ],
     },
     vra_etc: {
-        title: 'Evapotranspiration Zones',
+        title: 'ETc Zones (Evapotranspiration)',
+        unit: 'mm/day',
         items: [
-            { color: '#54278f', label: 'Highest' },
-            { color: '#756bb1', label: 'High' },
-            { color: '#9e9ac8', label: 'Moderate' },
-            { color: '#c6dbef', label: 'Low' },
-            { color: '#f7fcfd', label: 'Lowest' },
-        ],
+            { color: '#54278f', label: 'Highest (Zone 5)' },
+            { color: '#756bb1', label: 'High (Zone 4)' },
+            { color: '#9e9ac8', label: 'Moderate (Zone 3)' },
+            { color: '#c6dbef', label: 'Low (Zone 2)' },
+            { color: '#f7fcfd', label: 'Lowest (Zone 1)' },
+        ]
     },
     vra_irrigation: {
         title: 'Irrigation Zones',

@@ -216,6 +216,12 @@ function AnalyticsSidebar() {
         if (isKelvin) {
             // Assume range 0-60°C for gauge visualization
             normalizedMean = Math.max(0, Math.min(1, mean / 60));
+        } else if (activeChartParam === 'etc') {
+            normalizedMean = Math.max(0, Math.min(1, mean / 10)); // ETc: 0-10 mm/day
+        } else if (activeChartParam === 'irrigation_need') {
+            normalizedMean = Math.max(0, Math.min(1, mean / 15));
+        } else if (activeChartParam === 'soilmoisture_mm') {
+            normalizedMean = Math.max(0, Math.min(1, mean / 200));
         } else {
             // 0-1 usually for indices, but if mean > 1 assume 0-100 or other
             normalizedMean = mean > 1 ? Math.min(1, mean / 100) : Math.min(1, mean);

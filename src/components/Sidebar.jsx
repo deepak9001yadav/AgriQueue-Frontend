@@ -15,6 +15,7 @@ import img_weather from '../assets/img_weather.png';
 import { getLayerDisplayName } from '../utils/layerConstants';
 import DroneUploadSection from './DroneUploadSection';
 import DroneIcon from './DroneIcon';
+import SidebarForecastTab from './SidebarForecastTab';
 
 function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGenerateCalendar, onViewCalendar, onGenerateReport, onQueryCurrentLayer, onCompare }) {
     const {
@@ -37,7 +38,13 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         isGeneratingReport,
         activeMapTab: activeTab,
         setActiveMapTab: setActiveTab,
-        droneLayer
+        droneLayer,
+        drawnAOI,
+        chartData,
+        setChartData,
+        setCurrentLayerData,
+        setFullChartData,
+        setForecastReportAssets
     } = useApp();
 
     const [uploadedLayers, setUploadedLayers] = useState([]);
@@ -78,7 +85,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
             setManagedLayers(managedLayers.map(l => l.id === id ? { ...l, visible: false } : l));
         } else {
             if (window.mapFunctions?.addOverlayLayer) {
-                window.mapFunctions.addOverlayLayer(id, layer.url, { 
+                window.mapFunctions.addOverlayLayer(id, layer.url, {
                     opacity: layer.opacity / 100,
                     bounds: layer.bounds
                 });
@@ -104,11 +111,11 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
     const setQuickDateRange = (daysAgo) => {
         const todayObj = new Date();
         const end = todayObj.toISOString().split('T')[0];
-        
+
         const startObj = new Date();
         startObj.setDate(todayObj.getDate() - daysAgo);
         const start = startObj.toISOString().split('T')[0];
-        
+
         setStartDate(start);
         setEndDate(end);
     };
@@ -187,6 +194,7 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
 
     const tabs = [
         { id: 'layers', icon: 'fa-layer-group', label: 'Layers' },
+        { id: 'forecast', icon: 'fa-wand-magic-sparkles', label: 'Forecast' },
         { id: 'drone', icon: 'drone', label: 'Drone' },
         { id: 'draw', icon: 'fa-pen-to-square', label: 'Draw' },
         { id: 'compare', icon: 'fa-code-compare', label: 'Compare' },
@@ -212,25 +220,25 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                                 const todayObj = new Date();
                                 const todayStr = todayObj.toISOString().split('T')[0];
                                 const currentYear = todayObj.getFullYear();
-                                
+
                                 const kharifStart = `${currentYear - 1}-06-01`;
                                 const kharifEnd = `${currentYear - 1}-10-31`;
-                                
+
                                 const rabiStart = `${currentYear - 1}-11-01`;
                                 const rabiEnd = `${currentYear}-04-30`;
-                                
+
                                 const d30 = new Date();
                                 d30.setDate(todayObj.getDate() - 30);
                                 const d30Str = d30.toISOString().split('T')[0];
-                                
+
                                 const d90 = new Date();
                                 d90.setDate(todayObj.getDate() - 90);
                                 const d90Str = d90.toISOString().split('T')[0];
-                                
+
                                 const d180 = new Date();
                                 d180.setDate(todayObj.getDate() - 180);
                                 const d180Str = d180.toISOString().split('T')[0];
-                                
+
                                 const isActive = (preset) => {
                                     if (preset === 30) return startDate === d30Str && endDate === todayStr;
                                     if (preset === 90) return startDate === d90Str && endDate === todayStr;
@@ -387,6 +395,16 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {/* 🔮🔮 FORECAST TAB 🔮🔮 */}
+                {activeTab === 'forecast' && (
+                    <div style={{ padding: '0 8px', height: '100%', overflowY: 'auto' }}>
+                        <SidebarForecastTab
+                            aoi={drawnAOI}
+                            chartData={chartData}
+                        />
                     </div>
                 )}
 

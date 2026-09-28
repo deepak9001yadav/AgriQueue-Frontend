@@ -1,6 +1,6 @@
 // API utility for backend communication
 import { auth } from '../config/firebase';
-const BASE_URL = import.meta.env.VITE_API_URL || "";
+export const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 /**
  * Get authentication headers with Firebase ID token
@@ -654,6 +654,48 @@ export async function uploadDrone(file) {
     }
 }
 
+// =====================================================================
+// FORECAST PREDICTION APIs
+// =====================================================================
+/**
+ * Start an 8-day CWSI + ETc forecast job.
+ * Returns { job_id, status } immediately (job runs in background).
+ */
+export async function startForecast(aoi, cwsiDate, etcDate) {
+    const headers = await getAuthHeaders();
+    const response = await fetch('/api/predict_forecast', {
+        method: 'POST',
+        headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ aoi, cwsi_date: cwsiDate, etc_date: etcDate }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+    return body;
+}
+
+/**
+ * Poll forecast job status.
+ * Returns { job_id, status, progress, result? }
+ */
+export async function pollForecast(jobId) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`/api/predict_status/${jobId}`, { headers });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+    return body;
+}
+
+/**
+ * Returns the URL for a single forecast frame PNG overlay.
+ * variable: 'cwsi' | 'etc' day: 0-based
+ */
+export function getForecastFrameUrl(jobId, variable, day) {
+    return `/api/predict_frame/${jobId}/${variable}/${day}`;
+}
+
 // ===================================================================
 // Export all API functions
 // ===================================================================
@@ -670,6 +712,11 @@ export default {
     fetchGeeTile,
     fetchVraMap,
     uploadDrone,
+
+    // Forecast
+    startForecast,
+    pollForecast,
+    getForecastFrameUrl,
 
     // Reports
     generateReport,

@@ -96,6 +96,9 @@ export function AppProvider({ children }) {
     // Layer management
     const [addedLayers, setAddedLayers] = useState([]);
 
+    // Forecast report assets for PDF export
+    const [forecastReportAssets, setForecastReportAssets] = useState(null);
+
     // Toggle dark mode
     const toggleDarkMode = useCallback(() => {
         setIsDarkMode(prev => {
@@ -153,6 +156,7 @@ export function AppProvider({ children }) {
         setSelectedLayer('');
         setDroneLayer(null);
         setActiveMapTab('layers');
+        setForecastReportAssets(null);
     }, []);
 
     const value = {
@@ -235,6 +239,10 @@ export function AppProvider({ children }) {
         setActiveModule,
         activeMapTab,
         setActiveMapTab,
+
+        // Forecast
+        forecastReportAssets,
+        setForecastReportAssets,
     };
 
     return (

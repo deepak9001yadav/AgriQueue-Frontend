@@ -740,6 +740,55 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         delete overlayLayersRef.current[id];
     }, []);
 
+    // Add a forecast GeoJSON zone overlay (Jenks-classified prediction zones)
+    const addZoneLayer = useCallback((geojson, options = {}) => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+        if (overlayLayersRef.current['forecast']) {
+            map.removeLayer(overlayLayersRef.current['forecast']);
+            delete overlayLayersRef.current['forecast'];
+        }
+        if (!geojson || !geojson.features || geojson.features.length === 0) return;
+        const layer = L.geoJSON(geojson, {
+            style: feature => ({
+                fillColor: feature.properties.fill_color,
+                fillOpacity: options.opacity ?? 0.75,
+                color: 'none',
+                weight: 0,
+            }),
+            onEachFeature: (feature, layer) => {
+                const p = feature.properties;
+                layer.bindTooltip(
+                    `<b>${p.label}</b><br/>Range: ${p.value_range}<br/>Mean: ${p.mean_value}`,
+                    { sticky: true }
+                );
+            }
+        });
+        layer.addTo(map);
+        overlayLayersRef.current['forecast'] = layer;
+        return layer;
+    }, []);
+
+    // Remove forecast overlay
+    const removeImageOverlay = useCallback(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+        if (overlayLayersRef.current['forecast']) {
+            map.removeLayer(overlayLayersRef.current['forecast']);
+            delete overlayLayersRef.current['forecast'];
+        }
+    }, []);
+
+    // Clear current analysis layer (called when forecast starts)
+    const clearCurrentLayer = useCallback(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+        Object.keys(overlayLayersRef.current).forEach(key => {
+            map.removeLayer(overlayLayersRef.current[key]);
+        });
+        overlayLayersRef.current = {};
+    }, []);
+
     const handleFitBounds = useCallback(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
@@ -852,10 +901,13 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             deleteShapes: handleDeleteShapes,
             addOverlayLayer,
             removeOverlayLayer,
+            addZoneLayer,
+            removeImageOverlay,
+            clearCurrentLayer,
             showIoTMarker,
             hideIoTMarker
         };
-    }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes, addOverlayLayer, removeOverlayLayer, showIoTMarker, hideIoTMarker]);
+    }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes, addOverlayLayer, removeOverlayLayer, addZoneLayer, removeImageOverlay, clearCurrentLayer, showIoTMarker, hideIoTMarker]);
 
     return (
         <div className="map-container">
