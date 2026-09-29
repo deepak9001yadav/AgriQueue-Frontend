@@ -663,7 +663,7 @@ export async function uploadDrone(file) {
  */
 export async function startForecast(aoi, cwsiDate, etcDate) {
     const headers = await getAuthHeaders();
-    const response = await fetch('/api/predict_forecast', {
+    const response = await fetch(`${BASE_URL}/api/predict_forecast`, {
         method: 'POST',
         headers: {
             ...headers,
@@ -682,7 +682,7 @@ export async function startForecast(aoi, cwsiDate, etcDate) {
  */
 export async function pollForecast(jobId) {
     const headers = await getAuthHeaders();
-    const response = await fetch(`/api/predict_status/${jobId}`, { headers });
+    const response = await fetch(`${BASE_URL}/api/predict_status/${jobId}`, { headers });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
     return body;
@@ -693,7 +693,7 @@ export async function pollForecast(jobId) {
  * variable: 'cwsi' | 'etc' day: 0-based
  */
 export function getForecastFrameUrl(jobId, variable, day) {
-    return `/api/predict_frame/${jobId}/${variable}/${day}`;
+    return `${BASE_URL}/api/predict_frame/${jobId}/${variable}/${day}`;
 }
 
 // ===================================================================
