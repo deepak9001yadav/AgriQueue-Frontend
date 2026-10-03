@@ -66,7 +66,10 @@ function AnalyticsSidebar() {
         activeChartParam,
         setActiveChartParam,
         activeMapTab,
-        droneLayer
+        droneLayer,
+        vraZones,
+        setVraZones,
+        currentLayerData
     } = useApp();
 
     const [activeTab, setActiveTab] = useState('overview');
@@ -674,7 +677,128 @@ function AnalyticsSidebar() {
         },
     };
 
+    const getVraZonePanel = () => {
+        let stats = currentLayerData?.stats || [];
+        if (!Array.isArray(stats)) {
+            stats = [];
+        }
+        
+        // Also ensure the current layer data matches the selected layer to avoid showing old data while loading
+        if (currentLayerData?.type !== selectedLayer) {
+            stats = [];
+        }
+        
+        const barData = {
+            labels: stats.map(s => s.label || `Zone ${s.class}`),
+            datasets: [{
+                label: 'Area (ha)',
+                data: stats.map(s => s.area_ha || 0),
+                backgroundColor: stats.map(s => s.fill_color || s.color),
+                borderRadius: 4
+            }]
+        };
+
+        const barOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            const stat = stats[context.dataIndex];
+                            if (!stat.area_pct) return `Area: ${stat.area_ha} ha`;
+                            return `${stat.area_pct.toFixed(1)}% | Mean: ${stat.mean_value.toFixed(3)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    title: { display: true, text: 'Area (ha)', color: isDarkMode ? '#a0aec0' : '#64748b' },
+                    beginAtZero: true,
+                    ticks: { color: isDarkMode ? '#a0aec0' : '#64748b' },
+                    grid: { color: isDarkMode ? '#3a3d40' : '#e2e8f0' }
+                },
+                x: {
+                    ticks: { color: isDarkMode ? '#a0aec0' : '#64748b' },
+                    grid: { display: false }
+                }
+            }
+        };
+
+        return (
+            <div style={{ padding: '10px', height: '100%', overflowY: 'auto' }}>
+                <h3 style={{ marginBottom: '15px', color: isDarkMode ? '#e8e6e3' : '#333' }}>VRA Zone Analysis</h3>
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '13px', marginRight: '10px', color: isDarkMode ? '#e8e6e3' : '#333' }}>Number of Zones:</label>
+                    <select 
+                        value={vraZones} 
+                        onChange={(e) => setVraZones(parseInt(e.target.value))}
+                        style={{ padding: '4px', borderRadius: '4px', background: isDarkMode ? '#2c2f32' : '#fff', color: isDarkMode ? '#e8e6e3' : '#333', border: `1px solid ${isDarkMode ? '#4a4a4a' : '#ddd'}` }}
+                    >
+                        {[2,3,4,5,6,7].map(n => <option key={n} value={n}>{n} Zones</option>)}
+                    </select>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
+                        Changing zones will regenerate the map.
+                    </div>
+                </div>
+                
+                {stats.length > 0 && stats[0].area_ha !== undefined ? (
+                    <>
+                        <div style={{ height: '250px', marginBottom: '20px' }}>
+                            <Bar data={barData} options={barOptions} />
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse', color: isDarkMode ? '#e8e6e3' : '#333' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: `1px solid ${isDarkMode ? '#4a4a4a' : '#ddd'}`, textAlign: 'left' }}>
+                                        <th style={{ padding: '8px 4px' }}>Zone</th>
+                                        <th style={{ padding: '8px 4px' }}>Area (ha)</th>
+                                        <th style={{ padding: '8px 4px' }}>Area %</th>
+                                        <th style={{ padding: '8px 4px' }}>Mean</th>
+                                        <th style={{ padding: '8px 4px' }}>Range</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.map((s, i) => (
+                                        <tr key={i} style={{ borderBottom: `1px solid ${isDarkMode ? '#2c2f32' : '#eee'}` }}>
+                                            <td style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 4px' }}>
+                                                <div style={{ width: '12px', height: '12px', backgroundColor: s.fill_color || s.color, borderRadius: '2px' }}></div>
+                                                {s.label || `Zone ${s.class}`}
+                                            </td>
+                                            <td style={{ padding: '8px 4px' }}>{s.area_ha?.toFixed(2)}</td>
+                                            <td style={{ padding: '8px 4px' }}>{s.area_pct?.toFixed(1)}%</td>
+                                            <td style={{ padding: '8px 4px' }}>{s.mean_value?.toFixed(3)}</td>
+                                            <td style={{ padding: '8px 4px' }}>{s.min_value?.toFixed(2)} - {s.max_value?.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                ) : (
+                    <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: '40px' }}>
+                        Loading zone statistics...
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // MAIN RENDER LOGIC
+    if (selectedLayer && selectedLayer.startsWith('vra_')) {
+        return (
+            <aside className={asideCls} style={asideStyle}>
+                {toggleBtn}
+                {resizerEl}
+                <div className="analytics-sidebar-inner">
+                     {getVraZonePanel()}
+                </div>
+            </aside>
+        );
+    }
+
     // Only render the sidebar if a layer is selected or drone tab is active. 
     // This keeps it "Gone" on page load until user interracts with layers.
     if (!selectedLayer && activeMapTab !== 'drone') {
@@ -863,201 +987,6 @@ function AnalyticsSidebar() {
     // Case 1: Data is available
     if ((chartData && chartData.length > 0) || ndviStats) {
 
-        // Context A: Layer Selection Context -> Show Full Dashboard
-        if (showDashboard && selectedLayer === 'ndvi') {
-            return (
-                <aside className={asideCls} style={asideStyle}>
-                    {toggleBtn}
-                    {resizerEl}
-                    <div className="analytics-sidebar-inner">
-                        <div className="ndvi-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'hidden' }}>
-                            {/* Header */}
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '10px',
-                                borderBottom: '1px solid var(--border-color)',
-                                flexShrink: 0
-                            }}>
-                                <h3 style={{
-                                    margin: 0,
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    color: 'var(--krishi-green)'
-                                }}>
-                                    <i className="fa-solid fa-leaf" style={{ marginRight: '8px' }}></i>
-                                    Average NDVI
-                                </h3>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className="ndvi-tabs" style={{ padding: '8px', display: 'flex', gap: '4px' }}>
-                                <button
-                                    className={`ndvi-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('overview')}
-                                    style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid transparent', cursor: 'pointer', background: activeTab === 'overview' ? 'var(--krishi-green)' : 'transparent', color: activeTab === 'overview' ? 'white' : 'inherit' }}
-                                >
-                                    <i className="fa-solid fa-chart-pie" style={{ marginRight: '5px' }}></i>
-                                    {t('opt_overview')}
-                                </button>
-                                <button
-                                    className={`ndvi-tab-btn ${activeTab === 'detailed' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('detailed')}
-                                    style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid transparent', cursor: 'pointer', background: activeTab === 'detailed' ? 'var(--krishi-green)' : 'transparent', color: activeTab === 'detailed' ? 'white' : 'inherit' }}
-                                >
-                                    <i className="fa-solid fa-list-ol" style={{ marginRight: '5px' }}></i>
-                                    {t('opt_detailed')}
-                                </button>
-                                <button
-                                    className={`ndvi-tab-btn ${activeTab === 'visual' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('visual')}
-                                    style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid transparent', cursor: 'pointer', background: activeTab === 'visual' ? 'var(--krishi-green)' : 'transparent', color: activeTab === 'visual' ? 'white' : 'inherit' }}
-                                >
-                                    <i className="fa-solid fa-chart-bar" style={{ marginRight: '5px' }}></i>
-                                    {t('opt_visual')}
-                                </button>
-                            </div>
-
-                            {/* Tab Content */}
-                            <div className="ndvi-content-wrapper" style={{ flex: '0 1 auto', maxHeight: '60%', overflowY: 'auto', padding: '12px' }}>
-
-                                {/* Overview Tab */}
-                                {activeTab === 'overview' && (
-                                    <div className="fade-in">
-                                        {/* Mean Card */}
-                                        <div className="overview-stat-card" style={{ padding: '12px', borderRadius: '8px', marginBottom: '10px', borderLeft: '4px solid var(--krishi-green)', borderRight: '1px solid #e2e8f0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                <span style={{ fontWeight: 600, color: 'var(--krishi-green)' }}>{t('opt_meana')}</span>
-                                                <i className="fa-solid fa-bullseye" style={{ color: 'var(--krishi-green)' }}></i>
-                                            </div>
-                                            <div style={{ height: '8px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                                                <div style={{ width: `${getNormalizedValue(stats?.mean)}%`, height: '100%', background: 'var(--krishi-green)' }}></div>
-                                            </div>
-                                            <div style={{ marginTop: '8px', textAlign: 'right', fontWeight: 'bold', color: '#166534' }}>{stats?.mean?.toFixed(3) || '--'}</div>
-                                        </div>
-
-                                        {/* Median Card */}
-                                        <div className="overview-stat-card" style={{ padding: '12px', borderRadius: '8px', marginBottom: '10px', borderLeft: '4px solid #166534', borderRight: '1px solid #e2e8f0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                <span style={{ fontWeight: 600, color: '#166534' }}>{t('opt_median')}</span>
-                                                <i className="fa-solid fa-sort" style={{ color: '#166534' }}></i>
-                                            </div>
-                                            <div style={{ height: '8px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                                                <div style={{ width: `${getNormalizedValue(stats?.median)}%`, height: '100%', background: '#166534' }}></div>
-                                            </div>
-                                            <div style={{ marginTop: '8px', textAlign: 'right', fontWeight: 'bold', color: '#166534' }}>{stats?.median?.toFixed(3) || '--'}</div>
-                                        </div>
-
-                                        {/* Health Status */}
-                                        <div style={{ padding: '16px', borderRadius: '8px', background: 'linear-gradient(135deg, var(--krishi-green), #15803d)', color: 'white', textAlign: 'center', marginTop: '12px', boxShadow: '0 4px 15px rgba(34, 197, 94, 0.2)' }}>
-                                            <div style={{ fontSize: '32px', marginBottom: '10px' }}>{healthStatus.emoji}</div>
-                                            <h3 style={{ margin: '0 0 5px 0' }}>{t('opt_overall_health')}</h3>
-                                            <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{healthStatus.text}</div>
-                                            <div style={{ fontSize: '12px', marginTop: '8px', opacity: 0.9 }}>
-                                                {t('opt_average')}: {stats?.mean?.toFixed(3)} | {t('opt_range')}: {stats?.range?.toFixed(3)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Detailed Tab */}
-                                {activeTab === 'detailed' && (
-                                    <div className="fade-in">
-                                        <div className="analytics-stats-grid">
-                                            {[
-                                                { label: 'opt_min', val: stats?.min, icon: 'fa-arrow-down', color: '#ef4444' },
-                                                { label: 'opt_max', val: stats?.max, icon: 'fa-arrow-up', color: '#22c55e' },
-                                                { label: 'opt_stddev', val: stats?.stdDev, icon: 'fa-wave-square', color: '#f59e0b' },
-                                                { label: 'opt_range', val: stats?.range, icon: 'fa-arrows-left-right', color: '#64748b' }
-                                            ].map((item, i) => (
-                                                <div key={i} className="detailed-stat-card" style={{ padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '4px' }}>{t(item.label)}</div>
-                                                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{item.val?.toFixed(3) || '--'}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Vegetation Cover Share */}
-                                        <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                            <h4 style={{ margin: 0, fontSize: '14px' }}>Vegetation Cover Share</h4>
-                                        </div>
-
-                                        <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                            <select
-                                                value={timeScale}
-                                                onChange={(e) => setTimeScale(e.target.value)}
-                                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '12px', background: 'var(--card-bg)' }}
-                                            >
-                                                <option value="monthly">Monthly</option>
-                                                <option value="weekly">Weekly</option>
-                                            </select>
-                                            <button
-                                                onClick={runLandCoverAnalysis}
-                                                disabled={landCoverLoading}
-                                                style={{ padding: '6px 12px', borderRadius: '4px', background: 'var(--krishi-green)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}
-                                            >
-                                                {landCoverLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Analyze'}
-                                            </button>
-                                        </div>
-
-                                        {landCoverData?.data?.length > 0 && (
-                                            <div style={{ marginBottom: '15px' }}>
-                                                <select
-                                                    value={selectedPeriod}
-                                                    onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
-                                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '12px', background: 'var(--card-bg)' }}
-                                                >
-                                                    {landCoverData.data.map((p, i) => (
-                                                        <option key={i} value={i}>{p.period}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        <div style={{ height: '220px', position: 'relative', marginBottom: '15px' }}>
-                                            {landCoverChartData() ? (
-                                                <Pie data={landCoverChartData()} options={landCoverChartOptions} />
-                                            ) : (
-                                                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '12px', textAlign: 'center', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
-                                                    Click Analyze to view vegetation distribution
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Visual Tab */}
-                                {activeTab === 'visual' && (
-                                    <div className="fade-in">
-                                        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px' }}>NDVI Distribution</h4>
-                                        <div style={{ height: '250px' }}>
-                                            {comparisonChartData ? (
-                                                <Bar data={comparisonChartData} options={comparisonChartOptions} />
-                                            ) : (
-                                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>No distribution data</div>
-                                            )}
-                                        </div>
-                                        <div style={{ marginTop: '20px', padding: '15px', borderRadius: '8px', background: isDarkMode ? '#2c2f32' : '#f0f9ff', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                                            <h5 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#0369a1' }}><i className="fa-solid fa-circle-info"></i> Guide</h5>
-                                            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: isDarkMode ? '#e8e6e3' : '#334155' }}>
-                                                <li>Median value represents the central tendency of crop health.</li>
-                                                <li>Wide range between Min/Max suggests variable field conditions.</li>
-                                                <li>Compare P25 and P75 to understand uniformity.</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                )}
-
-                            </div>
-
-                            {/* Chart Panel - Sidebar Mode */}
-                            <div style={{ flex: 1, padding: '0 10px 10px 10px', display: 'flex', flexDirection: 'column' }}>
-                                <ChartPanel mode="sidebar" />
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-            );
-        }
 
         // Context B: Chart Tab Context -> Show Data Report
         const reportCharts = getReportCharts();

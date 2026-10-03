@@ -14,6 +14,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { useApp } from '../context/AppContext';
 import { t } from '../utils/translations';
+import { formatDateDMY } from '../utils/dateUtils';
 
 // Register Chart.js components
 ChartJS.register(
@@ -76,9 +77,9 @@ function normalizeDateLabel(rawDate) {
         const year = compact.slice(0, 4);
         const month = compact.slice(4, 6);
         const day = malformed[2];
-        return `${year}-${month}-${day}`;
+        return formatDateDMY(`${year}-${month}-${day}`);
     }
-    return str;
+    return formatDateDMY(str);
 }
 
 function ChartPanel({ mode = 'overlay' }) {

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { t } from '../utils/translations';
+import { formatDateDMY } from '../utils/dateUtils';
 import './MapControls.css';
 
 import img_rgb from '../assets/img_rgb.png';
@@ -44,9 +45,11 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
         setChartData,
         setCurrentLayerData,
         setFullChartData,
-        setForecastReportAssets
+        setForecastReportAssets,
+        activeField
     } = useApp();
 
+    const [showCustomDates, setShowCustomDates] = useState(false);
     const [uploadedLayers, setUploadedLayers] = useState([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef(null);
@@ -210,77 +213,142 @@ function Sidebar({ onFetchData, onLayerChange, onClearMap, onVectorUpload, onGen
                 <div className="panel compact-panel">
                     <h3 className="sb2-header-title">
                         <i className="fa-solid fa-calendar-days"></i>
-                        <span>{t('select_date_range')}</span>
+                        <span>{activeField?.sowingDate ? 'Crop Observation Window' : t('select_date_range')}</span>
                     </h3>
 
-                    {/* Sleek Quick-Presets Pills */}
-                    <div className="date-presets-wrapper" style={{ marginBottom: '14px', width: '100%' }}>
-                        <div className="date-presets-container">
-                            {(() => {
-                                const todayObj = new Date();
-                                const todayStr = todayObj.toISOString().split('T')[0];
-                                const currentYear = todayObj.getFullYear();
+                    {/* Sowing Date Auto-Sync Card (Optimized & User-friendly) */}
+                    {activeField?.sowingDate && (
+                        <div className="crop-cycle-card">
+                            <div className="crop-cycle-header">
+                                <div className="crop-cycle-title" title={activeField.cropName || activeField.name || 'Crop Field'}>
+                                    <i className="fa-solid fa-seedling" style={{ color: 'var(--krishi-green)' }}></i>
+                                    <span>{activeField.cropName || activeField.name || 'Crop Field'}</span>
+                                </div>
+                                <span className="crop-cycle-badge">
+                                    <i className="fa-solid fa-arrows-rotate" style={{ fontSize: '9px' }}></i>
+                                    Auto Sowing
+                                </span>
+                            </div>
 
-                                const kharifStart = `${currentYear - 1}-06-01`;
-                                const kharifEnd = `${currentYear - 1}-10-31`;
+                            <div className="crop-cycle-dates">
+                                <div className="cycle-date-col">
+                                    <span className="cycle-date-lbl">Sowing (Start)</span>
+                                    <span className="cycle-date-val">{formatDateDMY(startDate || activeField.sowingDate)}</span>
+                                </div>
+                                <div className="cycle-arrow">
+                                    <i className="fa-solid fa-arrow-right-long"></i>
+                                </div>
+                                <div className="cycle-date-col" style={{ textAlign: 'right' }}>
+                                    <span className="cycle-date-lbl">Today (End)</span>
+                                    <span className="cycle-date-val">{formatDateDMY(endDate || today)}</span>
+                                </div>
+                            </div>
 
-                                const rabiStart = `${currentYear - 1}-11-01`;
-                                const rabiEnd = `${currentYear}-04-30`;
-
-                                const d30 = new Date();
-                                d30.setDate(todayObj.getDate() - 30);
-                                const d30Str = d30.toISOString().split('T')[0];
-
-                                const d90 = new Date();
-                                d90.setDate(todayObj.getDate() - 90);
-                                const d90Str = d90.toISOString().split('T')[0];
-
-                                const d180 = new Date();
-                                d180.setDate(todayObj.getDate() - 180);
-                                const d180Str = d180.toISOString().split('T')[0];
-
-                                const isActive = (preset) => {
-                                    if (preset === 30) return startDate === d30Str && endDate === todayStr;
-                                    if (preset === 90) return startDate === d90Str && endDate === todayStr;
-                                    if (preset === 180) return startDate === d180Str && endDate === todayStr;
-                                    if (preset === 'kharif') return startDate === kharifStart && endDate === kharifEnd;
-                                    if (preset === 'rabi') return startDate === rabiStart && endDate === rabiEnd;
-                                    return false;
-                                };
-
-                                return (
-                                    <>
-                                        <button type="button" className={`preset-pill ${isActive(30) ? 'active' : ''}`} onClick={() => setQuickDateRange(30)}>30 Days</button>
-                                        <button type="button" className={`preset-pill ${isActive(90) ? 'active' : ''}`} onClick={() => setQuickDateRange(90)}>3 Months</button>
-                                        <button type="button" className={`preset-pill ${isActive(180) ? 'active' : ''}`} onClick={() => setQuickDateRange(180)}>6 Months</button>
-                                        <button type="button" className={`preset-pill ${isActive('kharif') ? 'active' : ''}`} onClick={() => setSeasonalRange('kharif')}>Kharif</button>
-                                        <button type="button" className={`preset-pill ${isActive('rabi') ? 'active' : ''}`} onClick={() => setSeasonalRange('rabi')}>Rabi</button>
-                                    </>
-                                );
-                            })()}
+                            <button
+                                type="button"
+                                className="toggle-custom-date-btn"
+                                onClick={() => setShowCustomDates(prev => !prev)}
+                            >
+                                <i className={`fa-solid ${showCustomDates ? 'fa-chevron-up' : 'fa-sliders'}`}></i>
+                                <span>{showCustomDates ? 'Hide Custom Dates' : 'Change Dates / Custom Range'}</span>
+                            </button>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="date-inputs-card">
-                        <div className="date-field">
-                            <label htmlFor="start">Start</label>
-                            <div className="date-input-wrapper">
-                                <input id="start" type="date" max={today} value={startDate} onChange={handleStartDateChange} />
+                    {/* Expandable / Standard Date Selection Controls */}
+                    {(!activeField?.sowingDate || showCustomDates) && (
+                        <div className="custom-dates-wrapper">
+                            {/* Sleek Quick-Presets Pills */}
+                            <div className="date-presets-wrapper" style={{ marginBottom: '14px', width: '100%' }}>
+                                <div className="date-presets-container">
+                                    {activeField?.sowingDate && (
+                                        <button
+                                            type="button"
+                                            className={`preset-pill ${startDate === activeField.sowingDate && endDate === today ? 'active' : ''}`}
+                                            onClick={() => {
+                                                setStartDate(activeField.sowingDate);
+                                                setEndDate(today);
+                                            }}
+                                            title="Reset to Sowing Date"
+                                        >
+                                            <i className="fa-solid fa-seedling" style={{ marginRight: '3px' }}></i>
+                                            Sowing
+                                        </button>
+                                    )}
+                                    {(() => {
+                                        const todayObj = new Date();
+                                        const todayStr = todayObj.toISOString().split('T')[0];
+                                        const currentYear = todayObj.getFullYear();
+
+                                        const kharifStart = `${currentYear - 1}-06-01`;
+                                        const kharifEnd = `${currentYear - 1}-10-31`;
+
+                                        const rabiStart = `${currentYear - 1}-11-01`;
+                                        const rabiEnd = `${currentYear}-04-30`;
+
+                                        const d30 = new Date();
+                                        d30.setDate(todayObj.getDate() - 30);
+                                        const d30Str = d30.toISOString().split('T')[0];
+
+                                        const d90 = new Date();
+                                        d90.setDate(todayObj.getDate() - 90);
+                                        const d90Str = d90.toISOString().split('T')[0];
+
+                                        const d180 = new Date();
+                                        d180.setDate(todayObj.getDate() - 180);
+                                        const d180Str = d180.toISOString().split('T')[0];
+
+                                        const isActive = (preset) => {
+                                            if (preset === 30) return startDate === d30Str && endDate === todayStr;
+                                            if (preset === 90) return startDate === d90Str && endDate === todayStr;
+                                            if (preset === 180) return startDate === d180Str && endDate === todayStr;
+                                            if (preset === 'kharif') return startDate === kharifStart && endDate === kharifEnd;
+                                            if (preset === 'rabi') return startDate === rabiStart && endDate === rabiEnd;
+                                            return false;
+                                        };
+
+                                        return (
+                                            <>
+                                                <button type="button" className={`preset-pill ${isActive(30) ? 'active' : ''}`} onClick={() => setQuickDateRange(30)}>30 Days</button>
+                                                <button type="button" className={`preset-pill ${isActive(90) ? 'active' : ''}`} onClick={() => setQuickDateRange(90)}>3 Months</button>
+                                                <button type="button" className={`preset-pill ${isActive(180) ? 'active' : ''}`} onClick={() => setQuickDateRange(180)}>6 Months</button>
+                                                <button type="button" className={`preset-pill ${isActive('kharif') ? 'active' : ''}`} onClick={() => setSeasonalRange('kharif')}>Kharif</button>
+                                                <button type="button" className={`preset-pill ${isActive('rabi') ? 'active' : ''}`} onClick={() => setSeasonalRange('rabi')}>Rabi</button>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+
+                            <div className="date-inputs-card">
+                                <div className="date-field">
+                                    <label htmlFor="start">Start</label>
+                                    <div className="date-input-wrapper">
+                                        <input id="start" type="date" max={today} value={startDate} onChange={handleStartDateChange} />
+                                    </div>
+                                </div>
+                                <div className="date-arrow-separator">
+                                    <i className="fa-solid fa-arrow-right-long"></i>
+                                </div>
+                                <div className="date-field">
+                                    <label htmlFor="end">End</label>
+                                    <div className="date-input-wrapper">
+                                        <input id="end" type="date" max={today} value={endDate} onChange={handleEndDateChange} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="date-arrow-separator">
-                            <i className="fa-solid fa-arrow-right-long"></i>
-                        </div>
-                        <div className="date-field">
-                            <label htmlFor="end">End</label>
-                            <div className="date-input-wrapper">
-                                <input id="end" type="date" max={today} value={endDate} onChange={handleEndDateChange} />
-                            </div>
-                        </div>
-                    </div>
+                    )}
+
                     <button
                         className="btn action-btn-sm fetch-data-btn"
-                        onClick={onFetchData}
+                        onClick={() => {
+                            if (activeField?.sowingDate && !startDate) {
+                                setStartDate(activeField.sowingDate);
+                                setEndDate(today);
+                            }
+                            onFetchData();
+                        }}
                         disabled={isFetchingData}
                     >
                         <i className="fa-solid fa-magnifying-glass-chart"></i>

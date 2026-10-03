@@ -178,15 +178,16 @@ export async function fetchGeeTile(aoi, layer, startDate, endDate, specificDate 
     }
 }
 
-// Fetch VRA map with Jenks classification
-export async function fetchVraMap(aoi, parameter, date, startDate, endDate, signal = null) {
+// Fetch VRA map with Hybrid pipeline
+export async function fetchVraMap(aoi, parameter, date, startDate, endDate, nZones = 3, signal = null) {
     try {
         const requestBody = {
             aoi: aoi,
             parameter: parameter,
             date: date,
             start_date: startDate,
-            end_date: endDate
+            end_date: endDate,
+            n_zones: nZones
         };
 
         const response = await fetch(`${BASE_URL}/get_vra_map`, {

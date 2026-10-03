@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getFields, deleteField, updateField, getUserAreaSummary } from '../utils/api';
+import { formatDateDMY } from '../utils/dateUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import './Fields.css';
@@ -864,7 +865,7 @@ function Fields() {
                                         {field.sowingDate && (
                                             <div className="field-sowing-info" style={{ fontSize: '0.8rem', color: '#666', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <i className="far fa-calendar-alt" style={{ color: 'var(--primary-green)' }}></i>
-                                                <span>Sowed: {field.sowingDate} {field.harvestingDate ? `| Harvest: ${field.harvestingDate}` : ''}</span>
+                                                <span>Sowed: {formatDateDMY(field.sowingDate)} {field.harvestingDate ? `| Harvest: ${formatDateDMY(field.harvestingDate)}` : ''}</span>
                                             </div>
                                         )}
                                         <div className="field-stats">
@@ -959,8 +960,8 @@ function Fields() {
                                             <td className="row-dates-col">
                                                 {field.sowingDate ? (
                                                     <div style={{ fontSize: '0.85rem', color: '#555' }}>
-                                                        <div><strong style={{ color: '#888', fontWeight: 500 }}>S:</strong> {field.sowingDate}</div>
-                                                        {field.harvestingDate && <div><strong style={{ color: '#888', fontWeight: 500 }}>H:</strong> {field.harvestingDate}</div>}
+                                                        <div><strong style={{ color: '#888', fontWeight: 500 }}>S:</strong> {formatDateDMY(field.sowingDate)}</div>
+                                                        {field.harvestingDate && <div><strong style={{ color: '#888', fontWeight: 500 }}>H:</strong> {formatDateDMY(field.harvestingDate)}</div>}
                                                     </div>
                                                 ) : <span style={{ color: '#aaa', fontSize: '0.85rem' }}>N/A</span>}
                                             </td>

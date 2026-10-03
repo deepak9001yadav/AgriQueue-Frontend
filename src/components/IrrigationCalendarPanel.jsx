@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { t } from '../utils/translations';
+import { formatDateDMY } from '../utils/dateUtils';
 
 function IrrigationCalendarPanel({ onClose }) {
     const { irrigationCalendar, isDarkMode } = useApp();
@@ -265,7 +266,7 @@ function IrrigationCalendarPanel({ onClose }) {
                                 }}>
                                     <div>
                                         <div style={{ fontWeight: 600, fontSize: '13px' }}>
-                                            {event.date}
+                                            {formatDateDMY(event.date)}
                                         </div>
                                         <span style={{
                                             display: 'inline-block',

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getIoTConfig, saveIoTConfig, getIoTData, getFields, fetchDailyData } from '../utils/api';
+import { formatDateDMY } from '../utils/dateUtils';
 import { useApp } from '../context/AppContext';
 import { Line } from 'react-chartjs-2';
 import Swal from 'sweetalert2';
@@ -312,8 +313,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         if (!stats || !stats.ready || !stats.pairedData) return null;
 
         const labels = stats.pairedData.map(d => {
-            const date = new Date(d.date);
-            return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            return formatDateDMY(d.date);
         });
 
         const iotDataPoints = stats.pairedData.map(d => validationParam === 'moisture' ? d.iotSM : d.iotTemp);
@@ -711,7 +711,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
         const labels = sensorData.map(d => {
             const date = new Date(d.timestamp);
             const timeString = date.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-            const dateString = date.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric' });
+            const dateString = formatDateDMY(date);
             return `${timeString} ${dateString} (IST)`;
         });
 
@@ -2211,7 +2211,7 @@ function IoTSensorPanel({ panelWidth = 400, setPanelWidth = () => { } } = {}) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <i className="fa-solid fa-tower-broadcast" style={{ color: 'var(--krishi-green)', fontSize: '20px' }}></i>
                                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>
-                                    IoT Telemetry Analytics & Data Cleaning Engine
+                                    Microclimate Condition Analytics & Data Cleaning Engine
                                 </h3>
                             </div>
                             <button

@@ -6,6 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Swal from 'sweetalert2';
 import { getFields, saveField, getLastIrrigationCalendar, getUserAreaSummary, getIoTData, getLocationDetails } from '../utils/api';
+import { formatDateDMY } from '../utils/dateUtils';
 import { kml } from '@mapbox/togeojson';
 import './Dashboard.css';
 
@@ -328,7 +329,7 @@ function Dashboard() {
         }
 
         const chartData = cropHealthData.data.slice(-30);
-        const labels = chartData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        const labels = chartData.map(d => formatDateDMY(d.date));
         const ndviData = chartData.map(d => d.ndvi);
 
         const gradient = ctx.createLinearGradient(0, 0, 0, 100);
@@ -1069,7 +1070,7 @@ function Dashboard() {
                                                 return (
                                                     <div key={idx} className="irrigation-event-item" style={{ borderLeftColor: color }}>
                                                         <div className="event-date">
-                                                            {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                            {formatDateDMY(event.date)}
                                                         </div>
                                                         <div className="event-amount">{event.final_irrigation_mm?.toFixed(1)} mm</div>
                                                         <span className="event-priority" style={{ background: color }}>
@@ -1142,7 +1143,7 @@ function Dashboard() {
                                         </div>
                                         <div>
                                             <div className="stat-value">
-                                                {new Date(cropHealthData.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                {formatDateDMY(cropHealthData.startDate)}
                                             </div>
                                             <div className="stat-label">Start Date</div>
                                         </div>
@@ -1567,7 +1568,7 @@ function Dashboard() {
                                                         };
                                                         return (
                                                             <tr key={idx}>
-                                                                <td>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</td>
+                                                                <td>{formatDateDMY(event.date)}</td>
                                                                 <td>
                                                                     <span className="priority-badge" style={{ background: priorityColors[event.priority] || '#999' }}>
                                                                         {event.priority}
@@ -1643,7 +1644,7 @@ function Dashboard() {
                                             </div>
                                             <div className="db-modal-stat-info">
                                                 <div className="db-modal-stat-value">
-                                                    {new Date(cropHealthData.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                    {formatDateDMY(cropHealthData.startDate)}
                                                 </div>
                                                 <div className="db-modal-stat-label">Start Date</div>
                                             </div>
@@ -1654,7 +1655,7 @@ function Dashboard() {
                                             </div>
                                             <div className="db-modal-stat-info">
                                                 <div className="db-modal-stat-value">
-                                                    {new Date(cropHealthData.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                    {formatDateDMY(cropHealthData.endDate)}
                                                 </div>
                                                 <div className="db-modal-stat-label">End Date</div>
                                             </div>
@@ -1693,7 +1694,7 @@ function Dashboard() {
 
                                                     return (
                                                         <tr key={idx}>
-                                                            <td>{new Date(item.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</td>
+                                                            <td>{formatDateDMY(item.date)}</td>
                                                             <td style={{ fontWeight: 600, color: statusColor }}>
                                                                 {item.ndvi?.toFixed(3) || '—'}
                                                             </td>

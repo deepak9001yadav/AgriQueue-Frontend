@@ -46,6 +46,7 @@ export function AppProvider({ children }) {
 
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [activeField, setActiveField] = useState(null);
     const [selectedLayer, setSelectedLayer] = useState('');
     const [opacity, setOpacity] = useState(100);
 
@@ -96,6 +97,9 @@ export function AppProvider({ children }) {
     // Layer management
     const [addedLayers, setAddedLayers] = useState([]);
 
+    // VRA Zones count
+    const [vraZones, setVraZones] = useState(3);
+
     // Forecast report assets for PDF export
     const [forecastReportAssets, setForecastReportAssets] = useState(null);
 
@@ -145,6 +149,7 @@ export function AppProvider({ children }) {
     const clearAllData = useCallback((keepAOI = false) => {
         if (!keepAOI) {
             setDrawnAOI(null);
+            setActiveField(null);
         }
         setCurrentLayer(null);
         setCurrentLayerData(null);
@@ -180,6 +185,10 @@ export function AppProvider({ children }) {
         setStartDate,
         endDate,
         setEndDate,
+
+        // Active Field
+        activeField,
+        setActiveField,
 
         // Layer selection
         selectedLayer,
@@ -230,6 +239,10 @@ export function AppProvider({ children }) {
         // Layer management
         addedLayers,
         setAddedLayers,
+
+        // VRA Zones
+        vraZones,
+        setVraZones,
 
         // Actions
         clearAllData,

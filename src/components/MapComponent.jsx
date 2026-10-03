@@ -779,6 +779,64 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         }
     }, []);
 
+    // Add VRA Zone Layer (GeoJSON from Hybrid Pipeline)
+    const addVraZoneLayer = useCallback((geojson, options = {}) => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        // Clear existing VRA layer if any
+        if (currentLayerRef.current) {
+            map.removeLayer(currentLayerRef.current);
+        }
+
+        if (!geojson || !geojson.features || geojson.features.length === 0) return;
+
+        const layer = L.geoJSON(geojson, {
+            style: feature => ({
+                fillColor: feature.properties.fill_color,
+                fillOpacity: options.opacity ?? 0.75,
+                color: 'none',
+                weight: 0,
+            }),
+            onEachFeature: (feature, layer) => {
+                const p = feature.properties;
+                layer.bindTooltip(
+                    `
+                    <div style="font-family: 'Poppins', sans-serif; min-width: 150px; padding: 4px;">
+                        <div style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px;">
+                            <div style="width: 14px; height: 14px; border-radius: 3px; background-color: ${p.fill_color}; border: 1px solid rgba(0,0,0,0.1);"></div>
+                            <strong style="font-size: 13px; color: #1e293b;">${p.label}</strong>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Area:</span>
+                                <strong style="color: #0f172a;">${p.area_ha.toFixed(2)} ha</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Mean:</span>
+                                <strong style="color: #0f172a;">${p.mean_value.toFixed(3)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Range:</span>
+                                <strong style="color: #0f172a;">${p.min_value.toFixed(2)} - ${p.max_value.toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    `,
+                    { sticky: true, className: 'premium-tooltip' }
+                );
+            }
+        });
+
+        layer.addTo(map);
+        layer.bringToFront();
+        currentLayerRef.current = layer;
+        setCurrentLayer(layer);
+
+        return layer;
+    }, [setCurrentLayer]);
+
+
     // Clear current analysis layer (called when forecast starts)
     const clearCurrentLayer = useCallback(() => {
         const map = mapInstanceRef.current;
@@ -902,12 +960,13 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             addOverlayLayer,
             removeOverlayLayer,
             addZoneLayer,
+            addVraZoneLayer,
             removeImageOverlay,
             clearCurrentLayer,
             showIoTMarker,
             hideIoTMarker
         };
-    }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes, addOverlayLayer, removeOverlayLayer, addZoneLayer, removeImageOverlay, clearCurrentLayer, showIoTMarker, hideIoTMarker]);
+    }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes, addOverlayLayer, removeOverlayLayer, addZoneLayer, addVraZoneLayer, removeImageOverlay, clearCurrentLayer, showIoTMarker, hideIoTMarker]);
 
     return (
         <div className="map-container">

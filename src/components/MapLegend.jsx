@@ -264,11 +264,14 @@ function MapLegend({ layerType, stats }) {
     const legend = layerLegends[layerType];
 
     // Determine items to display: Prefer dynamic 'stats' if it's an array (VRA classes), otherwise use static legend
+    // Determine items to display: Prefer dynamic 'stats' if it's an array (VRA classes), otherwise use static legend
     const displayItems = Array.isArray(stats) ? stats.map((item, i) => {
-        let label = `Zone ${item['class']}`;
+        const itemColor = item.fill_color || item.color || '#000000';
+        let label = item.label || `Zone ${item.zone || item['class']}`;
+        
         if (legend && legend.items) {
             let staticItem = legend.items.find(si =>
-                si.color.toLowerCase() === item.color.toLowerCase()
+                si.color.toLowerCase() === itemColor.toLowerCase()
             );
             if (!staticItem) {
                 if (legend.items.length === stats.length) {
@@ -279,13 +282,15 @@ function MapLegend({ layerType, stats }) {
                 label = staticItem.label;
             }
         }
-        const hasRange = item.min != null && item.max != null;
+        const minVal = item.min_value ?? item.min;
+        const maxVal = item.max_value ?? item.max;
+        const hasRange = minVal != null && maxVal != null;
         const labelWithRange = hasRange
-            ? `${label} (${Number(item.min).toFixed(2)} - ${Number(item.max).toFixed(2)})`
+            ? `${label} (${Number(minVal).toFixed(2)} - ${Number(maxVal).toFixed(2)})`
             : label;
 
         return {
-            color: item.color,
+            color: itemColor,
             label: labelWithRange
         };
     }) : (legend ? legend.items : []);

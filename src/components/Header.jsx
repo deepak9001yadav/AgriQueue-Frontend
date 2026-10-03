@@ -213,7 +213,7 @@ function Header({ onLocationSelect }) {
                         }}
                     >
                         <i className="fa-solid fa-satellite-dish"></i>
-                        <span>Satellite Map</span>
+                        <span>Satellite Observation</span>
                     </button>
                     <button
                         onClick={() => {
@@ -238,7 +238,7 @@ function Header({ onLocationSelect }) {
                         }}
                     >
                         <i className="fa-solid fa-tower-broadcast"></i>
-                        <span>IoT Telemetry</span>
+                        <span>Microclimate Condition</span>
                     </button>
                 </div>
 

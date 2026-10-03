@@ -15,6 +15,7 @@ import DateCarousel from '../components/DateCarousel';
 import IoTSensorPanel from '../components/IoTSensorPanel';
 import { fetchDailyData, fetchIrrigationCalendar, fetchGeeTile, fetchVraMap, generateReport, getFields } from '../utils/api';
 import { getLayerDisplayName } from '../utils/layerConstants';
+import { formatDateDMY } from '../utils/dateUtils';
 import Swal from 'sweetalert2';
 import '../index.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -116,7 +117,11 @@ function SmartLoader({ visible, title, messages }) {
 function AppContent() {
   const {
     startDate,
+    setStartDate,
     endDate,
+    setEndDate,
+    activeField,
+    setActiveField,
     drawnAOI,
     setDrawnAOI,
     selectedLayer,
@@ -137,9 +142,12 @@ function AppContent() {
     removeNotification,
     activeModule,
     setActiveModule,
+    activeChartParam,
     setActiveChartParam,
     activeMapTab,
-    droneLayer
+    droneLayer,
+    vraZones,
+    setCurrentLayerData
   } = useApp();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -232,6 +240,11 @@ function AppContent() {
           const localFields = JSON.parse(localFieldsRaw);
           const field = localFields.find(f => f.id.toString() === fieldId);
           if (field) {
+            setActiveField(field);
+            if (field.sowingDate) {
+              setStartDate(field.sowingDate);
+              setEndDate(new Date().toISOString().split('T')[0]);
+            }
             if (field.geometry && Object.keys(field.geometry).length > 0) {
               console.log('Cache Hit: Loading field instantly from local storage');
               setDrawnAOI({
@@ -266,6 +279,11 @@ function AppContent() {
         const field = fields.find(f => f.id.toString() === fieldId);
 
         if (field) {
+          setActiveField(field);
+          if (field.sowingDate) {
+            setStartDate(field.sowingDate);
+            setEndDate(new Date().toISOString().split('T')[0]);
+          }
           if (field.geometry && Object.keys(field.geometry).length > 0) {
             console.log('Backend Success: Updating field data');
             setDrawnAOI({
@@ -297,7 +315,7 @@ function AppContent() {
       }
     }
     loadField();
-  }, [fieldId, setDrawnAOI]);
+  }, [fieldId, setDrawnAOI, setActiveField, setStartDate, setEndDate]);
 
   // Handle direct navigation to tabs via URL searchParams (e.g. ?field_id=62&tab=iot)
   useEffect(() => {
@@ -333,21 +351,44 @@ function AppContent() {
       Swal.fire({
         icon: 'warning',
         title: 'Missing Information',
-        text: 'Please draw an Area of Interest (AOI) on the map first.',
+        text: 'Please draw an Area of Interest (AOI) on the map or select a field first.',
         confirmButtonColor: 'var(--krishi-green)',
       });
       return;
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    let effectiveStart = startDate;
+    let effectiveEnd = endDate;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (!effectiveStart && activeField?.sowingDate) {
+      effectiveStart = activeField.sowingDate;
+      setStartDate(effectiveStart);
+    }
+    if (!effectiveEnd) {
+      effectiveEnd = todayStr;
+      setEndDate(effectiveEnd);
+    }
+
+    if (!effectiveStart) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Date',
+        text: 'Please select a start date or choose a field with a sowing date.',
+        confirmButtonColor: 'var(--krishi-green)',
+      });
+      return;
+    }
+
+    const start = new Date(effectiveStart);
+    const end = new Date(effectiveEnd);
     const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
     if (diffDays > 365) {
       Swal.fire({
         icon: 'warning',
         title: 'Date Range Too Large',
-        text: 'Please select ≤ 12 months (≤ 365 days).',
+        text: 'The selected date range is over 12 months (> 365 days). Please adjust the start date to within the last 365 days for satellite analysis.',
         confirmButtonColor: 'var(--krishi-green)',
       });
       return;
@@ -364,7 +405,7 @@ function AppContent() {
     try {
       console.log('Sending AOI:', drawnAOI);
 
-      const result = await fetchDailyData(drawnAOI, startDate, endDate, fieldId);
+      const result = await fetchDailyData(drawnAOI, effectiveStart, effectiveEnd, fieldId);
 
       // Handle non-ok response
       if (!result.ok) {
@@ -489,9 +530,9 @@ function AppContent() {
               <div class="result-content">
                 <div class="result-label">Analysis Range</div>
                 <div class="result-value">
-                  ${startDate} 
+                  ${formatDateDMY(effectiveStart)} 
                   <i class="fas fa-long-arrow-alt-right" style="margin: 0 8px; opacity: 0.4;"></i> 
-                  ${endDate}
+                  ${formatDateDMY(effectiveEnd)}
                 </div>
               </div>
             </div>
@@ -522,7 +563,7 @@ function AppContent() {
     } finally {
       setLoadingState('isFetchingData', false);
     }
-  }, [drawnAOI, startDate, endDate, setLoadingState, notify, removeNotification, setChartData, setNdviStats, ensureRightPanelOpen]);
+  }, [drawnAOI, startDate, endDate, activeField, setStartDate, setEndDate, fieldId, setLoadingState, notify, removeNotification, setChartData, setNdviStats, ensureRightPanelOpen]);
 
   // Handle layer change
   const handleLayerChange = useCallback(async (layer, specificDateOverride = null) => {
@@ -615,18 +656,18 @@ function AppContent() {
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
-    // const notifId = notify(`Loading ${displayName}...`, 'info', null); // Removed old notify
+    // Determine the date to use. If specificDateOverride is explicitly provided, use it.
+    // Otherwise, preserve the currently selected date if one exists.
+    const dateToUse = specificDateOverride !== null ? specificDateOverride : selectedImageryDate;
 
-    if (!specificDateOverride) {
-      setSelectedImageryDate(null);
-      setCurrentLayerType(layer);
-      ensureRightPanelOpen(); // Show analytics panel when switching layers
+    if (specificDateOverride !== null) {
+      setSelectedImageryDate(specificDateOverride);
     }
+    setCurrentLayerType(layer);
+    ensureRightPanelOpen();
 
     const currentRequestId = Symbol('layer_request');
     layerRequestRef.current = currentRequestId;
-
-
 
     try {
       const isVraLayer = layer.startsWith('vra_');
@@ -634,10 +675,8 @@ function AppContent() {
 
       if (isVraLayer) {
         const parameter = layer.replace('vra_', '');
-        const dateToUse = specificDateOverride;
-        tileData = await fetchVraMap(drawnAOI, parameter, dateToUse, startDate, endDate, signal);
+        tileData = await fetchVraMap(drawnAOI, parameter, dateToUse, startDate, endDate, vraZones, signal);
       } else {
-        const dateToUse = specificDateOverride;
         tileData = dateToUse
           ? await fetchGeeTile(drawnAOI, layer, null, null, dateToUse, signal)
           : await fetchGeeTile(drawnAOI, layer, startDate, endDate, signal);
@@ -650,28 +689,45 @@ function AppContent() {
 
       if (tileData.error) throw new Error(tileData.error);
 
-      if (window.mapFunctions && tileData.urlFormat) {
-        window.mapFunctions.addTileLayer(tileData.urlFormat, {
-          opacity: opacity / 100,
-          maxZoom: 20,
-          minZoom: 3,
-        });
+      if (window.mapFunctions) {
+        if (tileData.geojson) {
+          window.mapFunctions.addVraZoneLayer(tileData.geojson, { opacity: opacity / 100 });
+          setCurrentLayerType(layer);
+          setLayerStats(tileData.geojson.stats || tileData.classes);
+          const newLayerData = {
+            url: null,
+            geojson: tileData.geojson,
+            type: layer,
+            stats: tileData.geojson.stats || tileData.classes,
+            date: { start: startDate, end: endDate, specific: specificDateOverride },
+            opacity: opacity
+          };
+          currentTileDataRef.current = newLayerData;
+          setCurrentLayerData(newLayerData);
+        } else if (tileData.urlFormat) {
+          window.mapFunctions.addTileLayer(tileData.urlFormat, {
+            opacity: opacity / 100,
+            maxZoom: 20,
+            minZoom: 3,
+          });
 
-        setCurrentLayerType(layer);
-        setLayerStats(tileData.stats || tileData.classes);
+          setCurrentLayerType(layer);
+          setLayerStats(tileData.stats || tileData.classes);
 
-        currentTileDataRef.current = {
-          url: tileData.urlFormat,
-          type: layer,
-          stats: tileData.stats || tileData.classes,
-          date: { start: startDate, end: endDate, specific: specificDateOverride },
-          opacity: opacity
-        };
-
-        // notify(`${displayName} added to map.`, 'success'); // Optional: success toast or just hide loader
-        // removeNotification(notifId);
+          const newLayerData = {
+            url: tileData.urlFormat,
+            type: layer,
+            stats: tileData.stats || tileData.classes,
+            date: { start: startDate, end: endDate, specific: specificDateOverride },
+            opacity: opacity
+          };
+          currentTileDataRef.current = newLayerData;
+          setCurrentLayerData(newLayerData);
+        } else {
+           throw new Error('No valid map data returned from server');
+        }
       } else {
-        throw new Error('No tile URL returned from server');
+        throw new Error('Map functions not initialized');
       }
 
     } catch (error) {
@@ -705,7 +761,15 @@ function AppContent() {
         setLoadingState('isFetchingLayer', false);
       }
     }
-  }, [drawnAOI, startDate, endDate, opacity, setLoadingState, notify, removeNotification, selectedImageryDate]);
+  }, [drawnAOI, startDate, endDate, opacity, setLoadingState, notify, removeNotification, selectedImageryDate, vraZones]);
+
+  // Auto-refresh the map layer instantly when the user changes the number of zones
+  useEffect(() => {
+    if (drawnAOI && selectedLayer && selectedLayer.startsWith('vra_')) {
+      handleLayerChange(selectedLayer, selectedImageryDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vraZones]);
 
   const handleClearMap = useCallback(() => {
     clearAllData(true);
