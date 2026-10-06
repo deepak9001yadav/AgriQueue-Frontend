@@ -992,6 +992,7 @@ function AppContent() {
         crop_name: 'General Crop',
         area_ha: 0,
         location: '',
+        backend_url: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000',
       };
       const blob = await generateReport(reportPayload);
       const url = window.URL.createObjectURL(blob);
