@@ -72,6 +72,14 @@ function Dashboard() {
         mapInstanceRef.current = map;
         fieldsLayerRef.current = new L.FeatureGroup().addTo(map);
 
+        // Scale control
+        L.control.scale({
+            position: 'topleft',
+            metric: true,
+            imperial: false,
+            maxWidth: 150
+        }).addTo(map);
+
         const timer = setTimeout(() => {
             if (map && map.getContainer()) {
                 map.invalidateSize();

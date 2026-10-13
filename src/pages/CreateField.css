@@ -369,28 +369,34 @@ div:where(.swal2-container) .swal2-popup {
     padding: 2em !important;
 }
 
-/* Scale bar ka background aur border change karein */
-.leaflet-control-scale-line {
-    background: transparent !important;
-    /* Blue background with transparency */
-    border: 2px solid white !important;
-    /* White border */
-    border-top: none !important;
-    /* Upar ka border hatana (optional) */
-    color: white !important;
-    /* Text ka color */
-    font-size: 12px;
-    font-weight: bold;
-    font-family: 'Arial', sans-serif;
-    padding: 0 5px;
-    text-shadow: 1px 1px 2px black;
-    /* Text ke piche shadow taki clear dikhe */
-    border-radius: 4px;
-    /* Thoda rounded corners */
+/* Premium Scale Bar Styling */
+.leaflet-control-scale {
+    margin-top: 14px !important;
+    margin-bottom: 14px !important;
+    margin-left: 14px !important;
 }
 
-/* Agar aap chahte hain ki scale ke aas-paas thoda aur gap ho */
-.leaflet-control-scale {
-    margin-bottom: 10px;
-    margin-right: 10px;
+.leaflet-control-scale-line {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 2px solid #0f172a !important;
+    border-top: none !important;
+    color: #0f172a !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    padding: 3px 8px 3px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+    border-radius: 0 0 5px 5px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.02em !important;
+    text-align: center !important;
+}
+
+body.dark-mode .leaflet-control-scale-line {
+    background: rgba(15, 23, 42, 0.88) !important;
+    border-color: #cbd5e1 !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
 }

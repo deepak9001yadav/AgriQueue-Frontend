@@ -106,7 +106,7 @@ function CreateField() {
 
         mapInstanceRef.current = map;
 
-        // ADD THIS SECTION
+        // Scale control
         L.control.scale({
             metric: true,
             imperial: false,

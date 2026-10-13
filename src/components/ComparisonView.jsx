@@ -368,6 +368,14 @@ function ComparisonView({ layers, onClose, drawnAOI, startDate: globalStart, end
                 compMap.setView([20.59, 78.96], 5);
             }
 
+            // Scale control
+            L.control.scale({
+                position: 'topleft',
+                metric: true,
+                imperial: false,
+                maxWidth: 120
+            }).addTo(compMap);
+
             // Load Layer
             await updateOneMapLayer(compMap, config, index);
 

@@ -3742,3 +3742,39 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Map Scale Control Styling - Premium Glassmorphism
+───────────────────────────────────────────────────────────────────────────── */
+.leaflet-control-scale {
+  margin-top: 14px !important;
+  margin-bottom: 14px !important;
+  margin-left: 14px !important;
+}
+
+.leaflet-control-scale-line {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 2px solid #0f172a !important;
+  border-top: none !important;
+  color: #0f172a !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  padding: 3px 8px 3px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+  border-radius: 0 0 5px 5px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.02em !important;
+  text-align: center !important;
+  user-select: none !important;
+  pointer-events: auto !important;
+}
+
+body.dark-mode .leaflet-control-scale-line {
+  background: rgba(15, 23, 42, 0.88) !important;
+  border-color: #cbd5e1 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+}

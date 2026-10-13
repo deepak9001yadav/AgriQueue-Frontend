@@ -724,7 +724,7 @@ function AppContent() {
           currentTileDataRef.current = newLayerData;
           setCurrentLayerData(newLayerData);
         } else {
-           throw new Error('No valid map data returned from server');
+          throw new Error('No valid map data returned from server');
         }
       } else {
         throw new Error('Map functions not initialized');

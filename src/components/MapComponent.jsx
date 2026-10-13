@@ -94,15 +94,13 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         // Add layer control
         L.control.layers(baseMaps, {}, { position: 'topright' }).addTo(map);
 
-        // Scale control hidden as requested by user
-        /*
+        // Scale control
         L.control.scale({
             position: 'topleft',
             metric: true,
             imperial: false,
             maxWidth: 150
         }).addTo(map);
-        */
 
         // Initialize drawn items layer
         const drawnItems = new L.FeatureGroup().addTo(map);
