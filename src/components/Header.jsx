@@ -7,7 +7,7 @@ import { searchLocation } from '../utils/api';
 import Swal from 'sweetalert2';
 import './Header.css';
 
-function Header({ onLocationSelect }) {
+function Header({ onLocationSelect, mapCenter }) {
     const { isDarkMode, toggleDarkMode, language, setLanguage, toggleSidebar, activeModule, setActiveModule, setActiveChartParam } = useApp();
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -52,7 +52,7 @@ function Header({ onLocationSelect }) {
                 setShowResults(true);
             }
 
-            const results = await searchLocation(query);
+            const results = await searchLocation(query, mapCenter?.lat, mapCenter?.lon);
 
             if (results.length === 0) {
                 setSearchResults([{ noResults: true }]);
@@ -307,9 +307,21 @@ function Header({ onLocationSelect }) {
                                             selectResult(result);
                                         }}
                                     >
-                                        <div className="search-result-name">
-                                            <i className="fa-regular fa-map-pin" style={{ color: '#2f7a2f', marginRight: '6px' }}></i>
-                                            {result.display_name.split(',')[0]}
+                                        <div className="search-result-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <i className="fa-regular fa-map-pin" style={{ color: '#2f7a2f', marginRight: '6px' }}></i>
+                                                <span>{result.display_name.split(',')[0]}</span>
+                                            </div>
+                                            {result.source && (
+                                                <span style={{ fontSize: '10px', color: '#15803d', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>
+                                                    {result.source === 'KrishiZest Village Directory' ? 'Village' : result.source}
+                                                </span>
+                                            )}
+                                            {result.is_fallback && !result.source && (
+                                                <span style={{ fontSize: '10px', color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>
+                                                    Nearby
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="search-result-details">
                                             {result.display_name}

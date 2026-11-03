@@ -520,6 +520,35 @@ function CreateField() {
 
                 cropTypeSelect.addEventListener('change', updateCropNames);
                 cropNameSelect.addEventListener('change', checkCustomCrop);
+
+                // Auto-suggest Harvesting Date based on Regional Crop Standard Durations
+                const sowingInput = document.getElementById('swal-sowing-date');
+                const harvestInput = document.getElementById('swal-harvesting-date');
+                const cropDurations = {
+                    Wheat: 125, Paddy: 130, Maize: 110, Barley: 115, Bajra: 85,
+                    Gram: 115, Peas: 95, Lentils: 110, PigeonPea: 170,
+                    Potato: 95, Tomato: 105, Onion: 120, Cauliflower: 90,
+                    Sugarcane: 330, Mustard: 115, Cotton: 165
+                };
+
+                const autoCalculateHarvest = () => {
+                    if (sowingInput && sowingInput.value && harvestInput) {
+                        const selCrop = cropNameSelect.value || 'Paddy';
+                        const duration = cropDurations[selCrop] || 120;
+                        const sDate = new Date(sowingInput.value);
+                        if (!isNaN(sDate.getTime())) {
+                            sDate.setDate(sDate.getDate() + duration);
+                            harvestInput.value = sDate.toISOString().split('T')[0];
+                        }
+                    }
+                };
+
+                if (sowingInput) sowingInput.addEventListener('change', autoCalculateHarvest);
+                if (cropNameSelect) cropNameSelect.addEventListener('change', () => {
+                    if (sowingInput && sowingInput.value && harvestInput && !harvestInput.value) {
+                        autoCalculateHarvest();
+                    }
+                });
             },
             preConfirm: () => {
                 const name = document.getElementById('swal-name').value;

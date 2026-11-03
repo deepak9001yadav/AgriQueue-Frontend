@@ -3778,3 +3778,209 @@ body.dark-mode .leaflet-control-scale-line {
   color: #f8fafc !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
 }
+
+
+/* ==========================================================================
+   AGRO-CLIMATIC ZONES (ACZ) MAP TOGGLE & POPUP STYLES
+   ========================================================================== */
+
+.acz-floating-container {
+  position: absolute;
+  top: 12px;
+  right: 68px;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.acz-floating-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 30px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  user-select: none;
+}
+
+.acz-floating-btn:hover {
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
+
+.acz-floating-btn.active {
+  background: #1b3b2f;
+  color: #ffffff;
+  border-color: #00c853;
+  box-shadow: 0 4px 16px rgba(0, 200, 83, 0.35);
+}
+
+.acz-icon {
+  color: #10b981;
+  transition: transform 0.3s ease;
+}
+
+.acz-floating-btn.active .acz-icon {
+  color: #00e760;
+  transform: rotate(20deg);
+}
+
+.acz-label {
+  letter-spacing: 0.01em;
+}
+
+.acz-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.25s ease;
+}
+
+.acz-dot.active {
+  background: #00e760;
+  box-shadow: 0 0 8px #00e760;
+}
+
+.acz-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: acz-spin 0.8s linear infinite;
+}
+
+@keyframes acz-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Custom ACZ Leaflet Popup */
+.leaflet-popup.acz-custom-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+}
+
+.leaflet-popup.acz-custom-popup .leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+  font-family: 'Poppins', sans-serif;
+}
+
+.acz-popup-card {
+  padding: 16px;
+  max-width: 320px;
+}
+
+.acz-popup-header {
+  padding-left: 10px;
+  margin-bottom: 12px;
+}
+
+.acz-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.acz-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 2px 0 3px 0;
+}
+
+.acz-subtitle {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.acz-popup-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.acz-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.acz-metric-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.acz-metric-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+/* Dark Mode Support */
+body.dark-mode .acz-floating-btn {
+  background: rgba(30, 41, 59, 0.94);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+body.dark-mode .acz-floating-btn.active {
+  background: #0f291e;
+  color: #ffffff;
+  border-color: #00c853;
+}
+
+body.dark-mode .leaflet-popup.acz-custom-popup .leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+body.dark-mode .acz-title {
+  color: #f8fafc;
+}
+
+body.dark-mode .acz-subtitle {
+  color: #94a3b8;
+}
+
+body.dark-mode .acz-popup-grid {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+body.dark-mode .acz-metric-label {
+  color: #94a3b8;
+}
+
+body.dark-mode .acz-metric-value {
+  color: #e2e8f0;
+}

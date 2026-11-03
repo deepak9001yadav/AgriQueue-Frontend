@@ -56,6 +56,7 @@ export function AppProvider({ children }) {
     const [currentLayerData, setCurrentLayerData] = useState(null);
     const [fullChartData, setFullChartData] = useState(null);
     const [droneLayer, setDroneLayer] = useState(null);
+    const [showACZLayer, setShowACZLayer] = useState(false);
 
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
@@ -256,6 +257,10 @@ export function AppProvider({ children }) {
         // Forecast
         forecastReportAssets,
         setForecastReportAssets,
+
+        // Agro-Climatic Zones
+        showACZLayer,
+        setShowACZLayer,
     };
 
     return (

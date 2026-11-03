@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RiFocusMode } from "react-icons/ri";
+import { RiFocusMode, RiEarthLine } from "react-icons/ri";
+import { getAgroClimaticZones } from '../utils/api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -33,6 +34,24 @@ if (L.GeometryUtil && L.GeometryUtil.readableArea) {
     };
 }
 
+const ZONE_COLORS = {
+    1: '#3b82f6',  // Western Himalayan
+    2: '#06b6d4',  // Eastern Himalayan
+    3: '#10b981',  // Lower Gangetic Plain
+    4: '#14b8a6',  // Middle Gangetic Plain
+    5: '#22c55e',  // Upper Gangetic Plain
+    6: '#84cc16',  // Trans Gangetic Plain
+    7: '#f59e0b',  // Eastern Plateau & Hills
+    8: '#d97706',  // Central Plateau & Hills
+    9: '#ea580c',  // Western Plateau and Hills
+    10: '#e11d48', // Southern Plateau and Hills
+    11: '#0284c7', // East Coast Plains & Hills
+    12: '#059669', // West Coast Plains & Ghat
+    13: '#ca8a04', // Gujarat Plains & Hills
+    14: '#b45309', // Western Dry Region
+    15: '#6366f1', // Island Region
+};
+
 function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
@@ -48,7 +67,10 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     const droneOverlayRef = useRef(null);
 
     const [activeDrawTool, setActiveDrawTool] = useState(null);
-    const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading, activeModule, droneLayer, activeMapTab } = useApp();
+    const { drawnAOI, setDrawnAOI, currentLayer, setCurrentLayer, opacity, isLoading, activeModule, droneLayer, activeMapTab, showACZLayer, setShowACZLayer } = useApp();
+    const aczLayerRef = useRef(null);
+    const aczGeoJsonRef = useRef(null);
+    const [isFetchingACZ, setIsFetchingACZ] = useState(false);
 
     // Initialize map
     useEffect(() => {
@@ -845,6 +867,140 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         overlayLayersRef.current = {};
     }, []);
 
+    // Manage Agro-Climatic Zones Layer
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        if (!showACZLayer) {
+            if (aczLayerRef.current) {
+                map.removeLayer(aczLayerRef.current);
+                aczLayerRef.current = null;
+            }
+            return;
+        }
+
+        let isMounted = true;
+
+        const renderACZLayer = (geojsonData) => {
+            if (!mapInstanceRef.current) return;
+            if (aczLayerRef.current) {
+                mapInstanceRef.current.removeLayer(aczLayerRef.current);
+            }
+
+            const layer = L.geoJSON(geojsonData, {
+                style: (feature) => {
+                    const code = feature.properties?.regioncode || 1;
+                    const color = ZONE_COLORS[code] || '#10b981';
+                    return {
+                        color: color,
+                        weight: 2,
+                        opacity: 0.85,
+                        dashArray: '4, 4',
+                        fillColor: color,
+                        fillOpacity: 0.05,
+                    };
+                },
+                onEachFeature: (feature, fLayer) => {
+                    const p = feature.properties || {};
+                    const code = p.regioncode || 1;
+                    const color = ZONE_COLORS[code] || '#10b981';
+
+                    // Hover styling (subtle highlight)
+                    fLayer.on('mouseover', (e) => {
+                        const l = e.target;
+                        l.setStyle({
+                            weight: 3.5,
+                            dashArray: null,
+                            opacity: 1,
+                            fillOpacity: 0.16
+                        });
+                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                            l.bringToFront();
+                        }
+                    });
+
+                    fLayer.on('mouseout', (e) => {
+                        if (aczLayerRef.current) {
+                            aczLayerRef.current.resetStyle(e.target);
+                        }
+                    });
+
+                    // Click interaction - Show rich data popup
+                    fLayer.on('click', (e) => {
+                        const popupContent = `
+                            <div class="acz-popup-card">
+                                <div class="acz-popup-header" style="border-left: 4px solid ${color};">
+                                    <div class="acz-badge" style="background: ${color}22; color: ${color};">Zone ${p.regioncode}</div>
+                                    <h4 class="acz-title">${p.regionname}</h4>
+                                    <p class="acz-subtitle">${p.state || 'India'}</p>
+                                </div>
+                                <div class="acz-popup-grid">
+                                    <div class="acz-metric-item">
+                                        <span class="acz-metric-label">🌧️ Standard Rainfall</span>
+                                        <span class="acz-metric-value">${p.avgann_rf || 'N/A'}</span>
+                                    </div>
+                                    <div class="acz-metric-item">
+                                        <span class="acz-metric-label">🌡️ Avg Temperatures</span>
+                                        <span class="acz-metric-value">Jan: ${p.avgtmp_jan || 'N/A'}<br/>Jul: ${p.avgtmp_jul || 'N/A'}</span>
+                                    </div>
+                                    <div class="acz-metric-item full-width">
+                                        <span class="acz-metric-label">🌱 Soil Types</span>
+                                        <span class="acz-metric-value">${p.soil || 'N/A'}</span>
+                                    </div>
+                                    <div class="acz-metric-item full-width">
+                                        <span class="acz-metric-label">🌾 Major Regional Crops</span>
+                                        <span class="acz-metric-value">${p.majorcrops || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        L.popup({
+                            maxWidth: 340,
+                            className: 'acz-custom-popup',
+                            autoPan: true
+                        })
+                        .setLatLng(e.latlng)
+                        .setContent(popupContent)
+                        .openOn(map);
+                    });
+                }
+            });
+
+            layer.addTo(map);
+            aczLayerRef.current = layer;
+        };
+
+        if (aczGeoJsonRef.current) {
+            renderACZLayer(aczGeoJsonRef.current);
+        } else {
+            setIsFetchingACZ(true);
+            getAgroClimaticZones()
+                .then((data) => {
+                    if (isMounted) {
+                        aczGeoJsonRef.current = data;
+                        renderACZLayer(data);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Failed to load agroclimatic zones:", err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Could not load Agro-Climatic Zones',
+                        text: err.message || 'Server error',
+                        confirmButtonColor: 'var(--krishi-green)'
+                    });
+                })
+                .finally(() => {
+                    if (isMounted) setIsFetchingACZ(false);
+                });
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [showACZLayer]);
+
     const handleFitBounds = useCallback(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
@@ -962,7 +1118,9 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
             removeImageOverlay,
             clearCurrentLayer,
             showIoTMarker,
-            hideIoTMarker
+            hideIoTMarker,
+            toggleAgroClimaticZones: () => setShowACZLayer(prev => !prev),
+            setAgroClimaticZonesVisible: (val) => setShowACZLayer(val),
         };
     }, [addTileLayer, clearAllLayers, centerOnLocation, handleDrawPolygon, handleDrawRectangle, handleEditShapes, handleSaveEdits, handleDeleteShapes, addOverlayLayer, removeOverlayLayer, addZoneLayer, addVraZoneLayer, removeImageOverlay, clearCurrentLayer, showIoTMarker, hideIoTMarker]);
 
@@ -970,7 +1128,23 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
         <div className="map-container">
             <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-            {/* --- YAHAN PASTE KAREIN: Button Code --- */}
+            {/* Agro-Climatic Zones Floating Toggle Button */}
+            <div className="acz-floating-container">
+                <button
+                    type="button"
+                    className={`acz-floating-btn ${showACZLayer ? 'active' : ''}`}
+                    onClick={() => setShowACZLayer(prev => !prev)}
+                    title={showACZLayer ? "Hide Agro-Climatic Zone Boundaries" : "Show Agro-Climatic Zone Boundaries"}
+                >
+                    {isFetchingACZ ? (
+                        <span className="acz-spinner"></span>
+                    ) : (
+                        <RiEarthLine size={18} className="acz-icon" />
+                    )}
+                    <span className="acz-label">Agro-Climatic Zones</span>
+                    <span className={`acz-dot ${showACZLayer ? 'active' : ''}`}></span>
+                </button>
+            </div>
             {/* Loading Spinner */}
             {isLoading && (
                 <div className="spinner-overlay">

@@ -957,11 +957,49 @@ function AppContent() {
       });
       return;
     }
+
+    // Step 1: Prompt user for Report Type (Report-2 vs Detailed)
+    const { value: reportChoice } = await Swal.fire({
+      title: 'Select Report Format',
+      html: `
+        <div style="text-align: left; padding: 4px;">
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Choose which report type to generate for your field:</p>
+          <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; cursor: pointer; padding: 10px; border: 1.5px solid #22c55e; border-radius: 8px; background: #f0fdf4;">
+            <input type="radio" name="swal_report_choice" value="short" checked style="margin-top: 3px;" />
+            <div>
+              <strong style="color: #15803d; font-size: 14px;">Quick AI Advisory Report (2–3 Pages)</strong>
+              <div style="font-size: 12px; color: #475569;">Executive farmer-friendly report with field map, satellite insights, crop lifecycle alignment, and precision advisory plan.</div>
+            </div>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+            <input type="radio" name="swal_report_choice" value="detailed" style="margin-top: 3px;" />
+            <div>
+              <strong style="color: #334155; font-size: 14px;">Comprehensive Technical Dossier</strong>
+              <div style="font-size: 12px; color: #475569;">Complete multi-page scientific report with full multi-spectral band charts and deep layer breakdowns.</div>
+            </div>
+          </label>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Generate Report',
+      confirmButtonColor: 'var(--krishi-green)',
+      cancelButtonText: 'Cancel',
+      preConfirm: () => {
+        const sel = document.querySelector('input[name="swal_report_choice"]:checked');
+        return sel ? sel.value : 'short';
+      }
+    });
+
+    if (!reportChoice) {
+      return; // User cancelled
+    }
+
     setLoadingState('isGeneratingReport', true);
     // const notifId = notify('Generating PDF Report...', 'info', null);
     setSmartLoader({
       visible: true,
-      title: 'Generating Report...',
+      title: reportChoice === 'short' ? 'Generating AI Advisory Report...' : 'Generating Full Report...',
       messages: REPORT_MESSAGES
     });
 
@@ -989,16 +1027,28 @@ function AppContent() {
         irrigation_summary: currentCalendar?.summary || {},
         metrics: computedMetrics,
         language: language || 'en',
-        crop_name: 'General Crop',
-        area_ha: 0,
-        location: '',
-        backend_url: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000',
+        crop_name: activeField?.cropName || activeField?.crop_name || 'General Crop',
+        crop_type: activeField?.cropType || activeField?.crop_type || '',
+        sowing_date: activeField?.sowingDate || activeField?.sowing_date || '',
+        harvesting_date: activeField?.harvestingDate || activeField?.harvesting_date || '',
+        field_name: activeField?.name || '',
+        village: activeField?.village || '',
+        district: activeField?.district || '',
+        area_ha: activeField?.areaHectares ? parseFloat(activeField.areaHectares) : (activeField?.area_hectares ? parseFloat(activeField.area_hectares) : 0),
+        location: activeField?.village && activeField?.district 
+          ? `${activeField.village}, ${activeField.district}` 
+          : (activeField?.district || activeField?.village || ''),
+        field_info: activeField || null,
+        backend_url: import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
+        report_version: reportChoice === 'short' ? 'report-2' : 'legacy',
+        include_technical_page: true,
       };
       const blob = await generateReport(reportPayload);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `KrishiZest_Report_${startDate}_to_${endDate}.pdf`;
+      const filePrefix = reportChoice === 'short' ? 'KrishiZest_AI_Advisory_Report' : 'KrishiZest_Full_Report';
+      link.download = `${filePrefix}_${startDate}_to_${endDate}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1017,7 +1067,7 @@ function AppContent() {
       setSmartLoader(prev => ({ ...prev, visible: false }));
       setLoadingState('isGeneratingReport', false);
     }
-  }, [drawnAOI, startDate, endDate, chartData, irrigationCalendar, setLoadingState, notify, removeNotification, setIrrigationCalendar, language]);
+  }, [drawnAOI, startDate, endDate, chartData, irrigationCalendar, setLoadingState, notify, removeNotification, setIrrigationCalendar, language, activeField]);
 
   // Getter for Sidebar
   const getCurrentLayerInfo = useCallback(() => {

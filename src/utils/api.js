@@ -237,52 +237,88 @@ export async function generateReport(reportData) {
     }
 }
 
-// Search location using Nominatim API
-export async function searchLocation(query) {
+// Search location using multi-tier backend engine with client-side fallback
+export async function searchLocation(query, lat = null, lon = null) {
+    const trimmed = (query || '').trim();
+    if (!trimmed) return [];
+
     try {
-        // Check if query is latitude, longitude (e.g., "20.5937, 78.9629" or "20.5937 78.9629")
-        // Basic match for digits, decimal points, and optional comma separation
-        const coordMatch = query.trim().match(/^([-+]?\d{1,2}(?:\.\d+)?)[,\s]+([-+]?\d{1,3}(?:\.\d+)?)$/);
+        // 1. Check if query is latitude, longitude (e.g., "20.5937, 78.9629" or "20.5937 78.9629")
+        const coordMatch = trimmed.match(/^([-+]?\d{1,2}(?:\.\d+)?)[,\s]+([-+]?\d{1,3}(?:\.\d+)?)$/);
 
         if (coordMatch) {
-            const lat = parseFloat(coordMatch[1]);
-            const lon = parseFloat(coordMatch[2]);
+            const parsedLat = parseFloat(coordMatch[1]);
+            const parsedLon = parseFloat(coordMatch[2]);
 
-            // Validate ranges
-            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                let displayName = `Coordinates: ${lat}, ${lon}`;
+            if (parsedLat >= -90 && parsedLat <= 90 && parsedLon >= -180 && parsedLon <= 180) {
+                let displayName = `Coordinates: ${parsedLat}, ${parsedLon}`;
                 try {
-                    const reverseResponse = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
-                    );
-                    if (reverseResponse.ok) {
-                        const data = await reverseResponse.json();
-                        if (data && data.display_name) {
-                            displayName = data.display_name;
-                        }
-                    }
+                    displayName = await reverseGeocode(parsedLat, parsedLon);
                 } catch (e) {
                     console.warn('Reverse geocoding failed', e);
                 }
 
                 return [{
-                    lat: lat.toString(),
-                    lon: lon.toString(),
+                    lat: parsedLat.toString(),
+                    lon: parsedLon.toString(),
                     display_name: displayName
                 }];
             }
         }
 
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`
-        );
-
-        if (!response.ok) {
-            throw new Error('Search failed');
+        // 2. Try Backend Multi-tier Search Engine (/api/search-location)
+        try {
+            const params = new URLSearchParams({ q: trimmed });
+            if (lat !== null && lon !== null) {
+                params.append('lat', lat);
+                params.append('lon', lon);
+            }
+            const backendRes = await fetch(`${BASE_URL}/api/search-location?${params.toString()}`);
+            if (backendRes.ok) {
+                const data = await backendRes.json();
+                if (data && Array.isArray(data.results) && data.results.length > 0) {
+                    return data.results;
+                }
+            }
+        } catch (backendErr) {
+            console.warn('Backend search-location unavailable, falling back to client-side:', backendErr);
         }
 
-        const results = await response.json();
-        return results;
+        // 3. Client-side Nominatim Fallback (with countrycodes=in and addressdetails=1)
+        const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&countrycodes=in&limit=8&addressdetails=1`;
+        const response = await fetch(osmUrl);
+
+        if (response.ok) {
+            const results = await response.json();
+            if (results && results.length > 0) {
+                return results;
+            }
+        }
+
+        // 4. Token Fallback: If compound name (e.g. "Bhairopur Tikra"), try individual tokens
+        const words = trimmed.split(/[\s,]+/).filter(w => w.length >= 3);
+        if (words.length >= 2) {
+            for (const word of words) {
+                try {
+                    const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(word + ' Uttar Pradesh')}&countrycodes=in&limit=3&addressdetails=1`;
+                    const fbRes = await fetch(fallbackUrl);
+                    if (fbRes.ok) {
+                        const fbData = await fbRes.json();
+                        if (fbData && fbData.length > 0) {
+                            return fbData.map(item => ({
+                                ...item,
+                                is_fallback: true,
+                                display_name: `${item.display_name} (Similar Area)`
+                            }));
+                        }
+                    }
+                } catch (e) {
+                    // continue
+                }
+            }
+        }
+
+        return [];
     } catch (error) {
         console.error('Search error:', error);
         throw error;
@@ -292,6 +328,19 @@ export async function searchLocation(query) {
 // Reverse geocode
 export async function reverseGeocode(lat, lng) {
     try {
+        // Try backend reverse-geocode first
+        try {
+            const backendRes = await fetch(`${BASE_URL}/api/reverse-geocode?lat=${lat}&lon=${lng}`);
+            if (backendRes.ok) {
+                const data = await backendRes.json();
+                if (data && data.data && data.data.display_name) {
+                    return data.data.display_name;
+                }
+            }
+        } catch (e) {
+            console.warn('Backend reverse-geocode failed, falling back to OSM:', e);
+        }
+
         const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
         );
@@ -301,10 +350,10 @@ export async function reverseGeocode(lat, lng) {
         }
 
         const data = await response.json();
-        return data.display_name || 'Unknown location';
+        return data.display_name || `Location: ${lat}, ${lng}`;
     } catch (error) {
         console.error('Reverse geocoding error:', error);
-        return 'Unknown location';
+        return `Location: ${lat}, ${lng}`;
     }
 }
 
@@ -697,6 +746,32 @@ export function getForecastFrameUrl(jobId, variable, day) {
     return `${BASE_URL}/api/predict_frame/${jobId}/${variable}/${day}`;
 }
 
+/**
+ * Fetch simplified Agro-Climatic Zones GeoJSON for map display.
+ */
+export async function getAgroClimaticZones() {
+    const response = await fetch(`${BASE_URL}/api/agroclimatic_zones`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch agro-climatic zones: HTTP ${response.status}`);
+    }
+    return response.json();
+}
+
+/**
+ * Fetch the specific Agro-Climatic Zone for an AOI or coordinate pair.
+ */
+export async function getFieldAgroClimaticZone(data) {
+    const response = await fetch(`${BASE_URL}/api/agroclimatic_zone_for_field`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to fetch field agro-climatic zone: HTTP ${response.status}`);
+    }
+    return response.json();
+}
+
 // ===================================================================
 // Export all API functions
 // ===================================================================
@@ -721,6 +796,10 @@ export default {
 
     // Reports
     generateReport,
+
+    // Agro-Climatic Zones
+    getAgroClimaticZones,
+    getFieldAgroClimaticZone,
 
     // Field management
     getFields,
