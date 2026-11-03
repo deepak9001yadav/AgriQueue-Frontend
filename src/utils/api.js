@@ -1,6 +1,6 @@
 // API utility for backend communication
 import { auth } from '../config/firebase';
-export const BASE_URL = import.meta.env.VITE_API_URL || "";
+export const BASE_URL = import.meta.env.VITE_API_URL || "https://krishizest-webapp-backend.onrender.com";
 
 /**
  * Get authentication headers with Firebase ID token

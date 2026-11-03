@@ -15,7 +15,7 @@ const DateCarousel = ({ onDateSelect }) => {
             
             setLoading(true);
             try {
-                const BASE_URL = import.meta.env.VITE_API_URL || "";
+                const BASE_URL = import.meta.env.VITE_API_URL || "https://krishizest-webapp-backend.onrender.com";
                 const response = await fetch(`${BASE_URL}/api/s2_cloud_info`, {
                     method: 'POST',
                     headers: {
