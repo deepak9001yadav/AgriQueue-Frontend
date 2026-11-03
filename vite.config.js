@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const backendUrl = env.VITE_BACKEND_URL || env.VITE_API_URL || 'https://krishizest-webapp-backend.onrender.com'
+  const backendUrl = env.VITE_BACKEND_URL || env.VITE_API_URL || (mode === 'production' ? 'https://krishizest-webapp-backend.onrender.com' : 'http://localhost:5000')
 
   return {
     plugins: [react()],

@@ -13,7 +13,7 @@ import ComparisonView from '../components/ComparisonView';
 import NotificationContainer from '../components/NotificationContainer';
 import DateCarousel from '../components/DateCarousel';
 import IoTSensorPanel from '../components/IoTSensorPanel';
-import { fetchDailyData, fetchIrrigationCalendar, fetchGeeTile, fetchVraMap, generateReport, getFields } from '../utils/api';
+import { fetchDailyData, fetchIrrigationCalendar, fetchGeeTile, fetchVraMap, generateReport, getFields, BASE_URL } from '../utils/api';
 import { getLayerDisplayName } from '../utils/layerConstants';
 import { formatDateDMY } from '../utils/dateUtils';
 import Swal from 'sweetalert2';
@@ -1039,7 +1039,7 @@ function AppContent() {
           ? `${activeField.village}, ${activeField.district}` 
           : (activeField?.district || activeField?.village || ''),
         field_info: activeField || null,
-        backend_url: import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
+        backend_url: BASE_URL,
         report_version: reportChoice === 'short' ? 'report-2' : 'legacy',
         include_technical_page: true,
       };

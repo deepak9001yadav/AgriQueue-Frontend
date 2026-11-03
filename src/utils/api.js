@@ -1,6 +1,14 @@
 // API utility for backend communication
 import { auth } from '../config/firebase';
-export const BASE_URL = import.meta.env.VITE_API_URL || "https://krishizest-webapp-backend.onrender.com";
+// Base backend URL resolution:
+// In production (live on Render/Vercel): defaults to https://krishizest-webapp-backend.onrender.com
+// In local development: defaults to http://localhost:5000
+const DEFAULT_PROD_BACKEND = "https://krishizest-webapp-backend.onrender.com";
+const DEFAULT_DEV_BACKEND = "http://localhost:5000";
+
+export const BASE_URL = 
+    import.meta.env.VITE_API_URL || 
+    (import.meta.env.PROD ? DEFAULT_PROD_BACKEND : DEFAULT_DEV_BACKEND);
 
 /**
  * Get authentication headers with Firebase ID token
