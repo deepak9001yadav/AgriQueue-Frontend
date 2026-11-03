@@ -1035,8 +1035,8 @@ function AppContent() {
         village: activeField?.village || '',
         district: activeField?.district || '',
         area_ha: activeField?.areaHectares ? parseFloat(activeField.areaHectares) : (activeField?.area_hectares ? parseFloat(activeField.area_hectares) : 0),
-        location: activeField?.village && activeField?.district 
-          ? `${activeField.village}, ${activeField.district}` 
+        location: activeField?.village && activeField?.district
+          ? `${activeField.village}, ${activeField.district}`
           : (activeField?.district || activeField?.village || ''),
         field_info: activeField || null,
         backend_url: BASE_URL,

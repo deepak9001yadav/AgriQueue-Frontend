@@ -13,7 +13,7 @@ const DateCarousel = ({ onDateSelect }) => {
     useEffect(() => {
         const fetchCloudInfo = async () => {
             if (!drawnAOI || !startDate || !endDate) return;
-            
+
             setLoading(true);
             try {
                 const response = await fetch(`${BASE_URL}/api/s2_cloud_info`, {
@@ -21,15 +21,15 @@ const DateCarousel = ({ onDateSelect }) => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
-                        aoi: drawnAOI, 
-                        start_date: startDate, 
-                        end_date: endDate 
+                    body: JSON.stringify({
+                        aoi: drawnAOI,
+                        start_date: startDate,
+                        end_date: endDate
                     }),
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     setDateItems(result.data || []);
                 }
@@ -94,8 +94,8 @@ const DateCarousel = ({ onDateSelect }) => {
                             const { day, month, year } = formatDateParts(item.date);
                             const isSelected = selectedDate === item.date;
                             return (
-                                <div 
-                                    key={index} 
+                                <div
+                                    key={index}
                                     className={`date-card ${isSelected ? 'selected' : ''}`}
                                     onClick={() => handleDateClick(item)}
                                 >
@@ -111,10 +111,9 @@ const DateCarousel = ({ onDateSelect }) => {
                                         <span className="date-month">{month}</span>
                                         <span className="date-year">{year}</span>
                                     </div>
-                                                                    <div className={`date-cloud-badge ${
-                                        getCloudPctDisplay(item) > 80 ? 'critical' : 
-                                        getCloudPctDisplay(item) > 30 ? 'warning' : 'clear'
-                                    }`}>
+                                    <div className={`date-cloud-badge ${getCloudPctDisplay(item) > 80 ? 'critical' :
+                                            getCloudPctDisplay(item) > 30 ? 'warning' : 'clear'
+                                        }`}>
                                         <div className="cloud-icon-mini">
                                             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                                 <path d="M17.5 19c3.037 0 5.5-2.463 5.5-5.5 0-2.97-2.354-5.382-5.28-5.492C17.433 4.116 14.156 1.5 10.5 1.5 6.136 1.5 2.6 4.936 2.502 9.245 0.536 10.147 0 12.015 0 14c0 3.314 2.686 6 6 6h11.5"></path>

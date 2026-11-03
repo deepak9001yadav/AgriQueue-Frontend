@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RiFocusMode, RiEarthLine } from "react-icons/ri";
+import { RiFocusMode } from "react-icons/ri";
 import { getAgroClimaticZones } from '../utils/api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -1127,24 +1127,6 @@ function MapComponent({ onAOICreated, onLocationSelect, fieldId }) {
     return (
         <div className="map-container">
             <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
-
-            {/* Agro-Climatic Zones Floating Toggle Button */}
-            <div className="acz-floating-container">
-                <button
-                    type="button"
-                    className={`acz-floating-btn ${showACZLayer ? 'active' : ''}`}
-                    onClick={() => setShowACZLayer(prev => !prev)}
-                    title={showACZLayer ? "Hide Agro-Climatic Zone Boundaries" : "Show Agro-Climatic Zone Boundaries"}
-                >
-                    {isFetchingACZ ? (
-                        <span className="acz-spinner"></span>
-                    ) : (
-                        <RiEarthLine size={18} className="acz-icon" />
-                    )}
-                    <span className="acz-label">Agro-Climatic Zones</span>
-                    <span className={`acz-dot ${showACZLayer ? 'active' : ''}`}></span>
-                </button>
-            </div>
             {/* Loading Spinner */}
             {isLoading && (
                 <div className="spinner-overlay">

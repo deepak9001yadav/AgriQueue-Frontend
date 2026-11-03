@@ -6,8 +6,8 @@ import { auth } from '../config/firebase';
 const DEFAULT_PROD_BACKEND = "https://krishizest-webapp-backend.onrender.com";
 const DEFAULT_DEV_BACKEND = "http://localhost:5000";
 
-export const BASE_URL = 
-    import.meta.env.VITE_API_URL || 
+export const BASE_URL =
+    import.meta.env.VITE_API_URL ||
     (import.meta.env.PROD ? DEFAULT_PROD_BACKEND : DEFAULT_DEV_BACKEND);
 
 /**
@@ -378,12 +378,12 @@ export async function getLocationDetails(lat, lng) {
 
         const data = await response.json();
         const address = data.address || {};
-        
+
         // Prioritize rural and local tags commonly used in OpenStreetMap for India
-        const village = address.isolated_dwelling || address.hamlet || address.village || 
-                        address.neighbourhood || address.suburb || address.residential || 
-                        address.locality || address.town || address.city || address.municipality || 'NA';
-        
+        const village = address.isolated_dwelling || address.hamlet || address.village ||
+            address.neighbourhood || address.suburb || address.residential ||
+            address.locality || address.town || address.city || address.municipality || 'NA';
+
         // Extract district or county
         let district = address.state_district || address.county || address.city_district || address.region || 'NA';
 
